@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 실습(스크롤) · 4장 그림과 사례로 이해하는 주요 공격 원리</title>
+<style>
+:root{--acc:#7B3F7E;--acclt:#BA7BBD;--deep:#5A2C5C;--pale:#F0E6F1;--bg:#170D17;--red:#E63329;
+      --ink:#FFFFFF;--mut:rgba(255,255,255,.82);--dim:rgba(255,255,255,.66);
+      --line:rgba(255,255,255,.22);--panel:rgba(255,255,255,.055)}
+*{box-sizing:border-box}
+@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth}}
+html.nomo{scroll-behavior:auto}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Pretendard","Pretendard Variable","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  font-size:16px;line-height:1.62;-webkit-text-size-adjust:100%;overflow-x:hidden}
+svg.sprite{display:none}
+.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.13em}
+
+/* ---------- 고정 장치 ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);z-index:60}
+.topbar i{display:block;height:100%;width:0;background:var(--acc)}
+.rail{position:fixed;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:55}
+.rail button{width:11px;height:11px;padding:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.38);background:transparent;cursor:pointer}
+.rail button.on{background:var(--acc);border-color:var(--acc);transform:scale(1.3)}
+.rail button:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.motionbtn{position:fixed;left:18px;bottom:18px;z-index:55;border:1.5px solid var(--line);background:rgba(0,0,0,.42);
+  color:var(--mut);border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer}
+.motionbtn:hover{color:#fff;border-color:var(--acclt)}
+@media(max-width:820px){.rail{display:none}}
+
+/* ---------- 장면 ---------- */
+.scene{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+  padding:88px clamp(18px,5vw,56px);overflow:hidden}
+.scene+.scene{border-top:1px solid rgba(255,255,255,.07)}
+.scene.alt{background:rgba(255,255,255,.03)}
+.scene>.inner{width:100%;max-width:1060px;margin:0 auto;position:relative;z-index:2}
+.bignum{position:absolute;right:3%;top:5%;z-index:1;pointer-events:none;user-select:none;
+  font-size:clamp(88px,20vw,240px);font-weight:800;line-height:.9;color:rgba(255,255,255,.045)}
+.kicker{font-size:11.5px;letter-spacing:.11em;font-weight:700;color:var(--mut);margin:0 0 12px}
+.accent{width:48px;height:4px;background:var(--red);margin:0 0 18px}
+h1{font-size:clamp(30px,6.2vw,58px);line-height:1.16;margin:0 0 18px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(22px,3.6vw,34px);line-height:1.25;margin:0 0 10px;font-weight:800;letter-spacing:-.015em}
+.lead{font-size:clamp(15px,1.9vw,18.5px);color:var(--mut);margin:0 0 6px;max-width:62ch}
+.step{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.06em;
+  color:var(--acclt);border:1.5px solid var(--acclt);border-radius:20px;padding:4px 14px;margin:0 0 16px}
+.hint{color:var(--mut);font-size:14.5px;margin:10px 0 20px;max-width:70ch}
+.down{margin-top:34px;display:inline-flex;align-items:center;gap:9px;color:var(--mut);font-size:13px;font-weight:700}
+.down i{display:block;width:1px;height:34px;background:linear-gradient(var(--acc),transparent);animation:sink 1.9s ease-in-out infinite}
+@keyframes sink{0%,100%{opacity:.3;transform:translateY(-5px)}50%{opacity:1;transform:translateY(5px)}}
+.metas{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
+.meta{border:1px solid var(--line);border-radius:16px;padding:4px 13px;font-size:12px;font-weight:700;color:var(--mut)}
+
+/* 표지 기하 도형 */
+.geo{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.geo i{position:absolute;display:block;border:1.5px solid rgba(255,255,255,.11);border-radius:50%}
+.geo i.sq{border-radius:10px}
+.geo i.fl{background:var(--deep);border-color:transparent;opacity:.6}
+.geo i.ac{border-color:var(--acc);opacity:.5}
+@keyframes drift{0%,100%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(0,-30px,0) rotate(6deg)}}
+
+/* ---------- 등장 ---------- */
+.rv{opacity:0;transform:translateY(28px);
+  transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.scene.in .rv{opacity:1;transform:none}
+.stage svg path.dr{stroke-dasharray:var(--L,600);stroke-dashoffset:var(--L,600);transition:stroke-dashoffset 1.15s ease .25s}
+.scene.in .stage svg path.dr{stroke-dashoffset:0}
+.stage svg g.node{opacity:0;transition:opacity .55s ease;transition-delay:var(--d,0s)}
+.scene.in .stage svg g.node{opacity:1}
+
+/* ---------- 무대(SVG) ---------- */
+.stage{margin:8px 0 18px;border:1px solid var(--line);border-radius:16px;background:rgba(0,0,0,.22);padding:10px}
+.stage svg{display:block;width:100%;height:auto}
+.zone{fill:rgba(255,255,255,.035);stroke:var(--line);stroke-dasharray:5 5}
+.zlabel{fill:var(--dim);font-size:12px;font-weight:700}
+.link{stroke:rgba(255,255,255,.3);stroke-width:2;fill:none}
+.link.dash{stroke-dasharray:7 6;stroke:var(--acc);opacity:.75}
+.nodec{fill:var(--deep);stroke:var(--acc);stroke-width:2}
+.nodet{fill:var(--ink);font-size:13.5px;font-weight:700;text-anchor:middle}
+.nodesub{fill:var(--dim);font-size:11.5px;text-anchor:middle}
+.dot{fill:var(--acc);stroke:#fff;stroke-width:2}
+.stage .cap{fill:var(--dim);font-size:11.5px}
+
+/* ---------- 카드 ---------- */
+.bank{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 16px;min-height:52px;padding:11px;
+  border:1.5px dashed var(--line);border-radius:14px;background:rgba(0,0,0,.18)}
+.bank:empty::after{content:"카드를 모두 놓았습니다";color:var(--dim);font-size:13px}
+.card{display:inline-flex;align-items:center;gap:7px;border:1.5px solid rgba(255,255,255,.34);border-radius:22px;
+  padding:8px 16px;background:rgba(255,255,255,.07);color:var(--ink);font-weight:700;font-size:14.5px;
+  font-family:inherit;cursor:pointer;transition:transform .2s,background .2s,border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--acclt);background:rgba(255,255,255,.12)}
+.card.sel{background:var(--deep);border-color:var(--acclt);box-shadow:0 6px 22px rgba(0,0,0,.42);transform:translateY(-2px)}
+.card.flying{transition:transform .42s cubic-bezier(.2,.8,.25,1)}
+.card:focus-visible,.dropbtn:focus-visible,.gap:focus-visible,.runbtn:focus-visible,.main:focus-visible,.ghost:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.card .ic{opacity:.85}
+.card.used{opacity:.34}
+body.graded .card{cursor:default}
+
+/* ---------- 놓는 자리 ---------- */
+.wins{display:grid;gap:14px;margin:0 0 16px}
+.wins.c2{grid-template-columns:repeat(2,1fr)}
+.wins.c3{grid-template-columns:repeat(3,1fr)}
+.wins.c4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:860px){.wins.c3,.wins.c4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.wins.c2,.wins.c3,.wins.c4{grid-template-columns:1fr}}
+.win{border:1.5px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:13px;
+  display:flex;flex-direction:column;gap:9px;min-height:132px;transition:border-color .2s,background .2s}
+.win.armed{border-color:var(--acclt);background:rgba(255,255,255,.07)}
+.win .dropbtn{display:block;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;padding:0;cursor:pointer}
+.win h3{margin:0;font-size:14.5px;font-weight:800}
+.win .sub{margin:2px 0 0;font-size:12px;color:var(--dim);line-height:1.45}
+.win .hold{display:flex;flex-wrap:wrap;gap:7px;min-height:34px;align-content:flex-start}
+.win .hold:empty::after{content:"비어 있음";color:var(--dim);font-size:12.5px}
+.win .hold .card{font-size:13.5px;padding:6px 13px}
+
+/* ---------- 문장 빈칸 ---------- */
+.sent{font-size:clamp(16px,2.2vw,20px);line-height:2.5;margin:0 0 14px;font-weight:600}
+.gap{display:inline-flex;align-items:center;justify-content:center;min-width:132px;min-height:40px;
+  border:2px dashed var(--acclt);border-radius:10px;padding:2px 13px;margin:0 4px;vertical-align:middle;
+  background:rgba(255,255,255,.06);color:var(--ink);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.gap.filled{border-style:solid;background:var(--deep)}
+.gap.empty{color:var(--dim)}
+.gap.ok{border-color:#7BD88F}
+.gap.no{border-color:#FFB4A2}
+
+/* ---------- 흐름 실행 ---------- */
+.runrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.runrow .lbl{font-size:13px;font-weight:800;color:var(--mut);letter-spacing:.04em}
+.runbtn{border:1.5px solid var(--acclt);background:transparent;color:var(--ink);border-radius:22px;
+  padding:9px 18px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
+.runbtn:hover{background:rgba(255,255,255,.1)}
+.runbtn[disabled]{opacity:.42;cursor:default}
+.runbtn.on{background:var(--deep);border-color:var(--acclt)}
+.log{border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.26);padding:6px 4px;margin:0 0 6px;min-height:56px}
+.log .empty{display:block;padding:12px 14px;color:var(--dim);font-size:13.5px}
+.log .li{display:flex;gap:11px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07);
+  font-size:14.5px;opacity:0;transform:translateX(-10px);animation:slidein .45s forwards}
+.log .li:last-child{border-bottom:0}
+@keyframes slidein{to{opacity:1;transform:none}}
+.log .tag{flex:0 0 auto;min-width:66px;text-align:center;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:800;align-self:flex-start}
+.t-pass{background:rgba(123,216,143,.16);color:#9BE3AC;border:1px solid rgba(123,216,143,.4)}
+.t-stop{background:rgba(255,180,162,.14);color:#FFC2B2;border:1px solid rgba(255,180,162,.4)}
+.t-odd{background:rgba(255,214,120,.14);color:#FFDE95;border:1px solid rgba(255,214,120,.42)}
+.t-alert{background:rgba(160,196,255,.14);color:#B7D0FF;border:1px solid rgba(160,196,255,.42)}
+.t-hold{background:rgba(255,255,255,.1);color:#E6E6E6;border:1px solid rgba(255,255,255,.3)}
+.log .tx{color:var(--mut);line-height:1.55}
+
+/* ---------- 처리 여력 ---------- */
+.gauge{margin:0 0 14px}
+.gauge .bar{height:16px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden;border:1px solid var(--line)}
+.gauge .bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .5s ease}
+.gauge.over .bar i{background:#FFB4A2}
+.gauge .cap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--dim);margin-top:6px;font-weight:700}
+
+/* ---------- 흐르는 기록 ---------- */
+.stream{position:relative;height:196px;overflow:hidden;border:1px solid var(--line);border-radius:14px;
+  background:rgba(0,0,0,.28);margin:0 0 14px}
+.stream .roll{position:absolute;left:0;right:0;top:0;animation:roll 18s linear infinite}
+.stream.hold .roll{animation-play-state:paused}
+@keyframes roll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.stream .row{display:grid;grid-template-columns:136px 1fr 112px 92px;gap:10px;padding:9px 15px;
+  font-size:13.5px;color:var(--mut);border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}
+.stream .row.blank span{display:block;height:9px;border-radius:5px;background:rgba(255,255,255,.14)}
+.stream .row.blank span:nth-child(2){background:rgba(255,255,255,.10)}
+.stream .row.blank span:nth-child(3){width:64%;background:rgba(255,255,255,.09)}
+.stream .row.blank span:nth-child(4){width:48%;background:rgba(255,255,255,.09)}
+.stream .row.pick{color:var(--ink);background:rgba(255,255,255,.1);font-weight:700;box-shadow:inset 3px 0 0 var(--acc)}
+@media(max-width:620px){.stream .row{grid-template-columns:106px 1fr;gap:14px;font-size:12.5px}.stream .row span:nth-child(n+3){display:none}}
+.picked{display:none;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px;margin:0 0 16px}
+.picked .cell{border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.05);padding:9px 12px}
+.picked .cell .k{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.04em}
+.picked .cell .v{font-size:14.5px;font-weight:800;margin-top:2px}
+
+/* ---------- 선택 문항 ---------- */
+.qs{border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:15px 17px;margin:0 0 14px}
+.qs .qq{font-size:15.5px;font-weight:700;margin:0 0 11px}
+.opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid var(--line);border-radius:11px;
+  margin:0 0 7px;cursor:pointer;font-size:14.5px;transition:border-color .18s,background .18s}
+.opt:hover{border-color:var(--acclt)}
+.opt:focus-within{outline:3px solid var(--acc);outline-offset:2px}
+.opt input{accent-color:var(--acc);width:17px;height:17px;flex:0 0 auto}
+.opt.is-answer{border-color:#7BD88F;background:rgba(123,216,143,.1)}
+.opt.is-chosen{font-weight:800}
+
+/* ---------- 채점 ---------- */
+.ctx{border-left:3px solid var(--acclt);background:rgba(255,255,255,.05);border-radius:0 11px 11px 0;
+  padding:12px 16px;margin:0 0 16px;font-size:14.5px}
+.ctx p{margin:4px 0;color:var(--mut)}
+.ctx b{color:var(--ink)}
+.expl{display:none;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.05);padding:15px 18px;margin:14px 0 0}
+.scene.graded .expl{display:block}
+.expl .ttl{font-size:12px;font-weight:800;letter-spacing:.07em;color:var(--acclt);margin:0 0 7px}
+.expl p{margin:0 0 9px;font-size:14.5px;color:var(--mut);line-height:1.65}
+.expl .basis{font-size:12px;color:var(--dim);margin:0}
+.rows{margin:10px 0 0}
+.rows:not(:empty){border-top:1px solid rgba(255,255,255,.1)}
+.rows .r{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13.5px;align-items:flex-start}
+.rows .r .m{flex:0 0 auto;width:20px;font-weight:800}
+.rows .r.g .m{color:#9BE3AC}
+.rows .r.b .m{color:#FFC2B2}
+.rows .r .t{color:var(--mut)}
+.rows .r .t b{color:var(--ink)}
+.disc{font-size:12.5px;color:var(--dim);margin:0 0 16px;border-left:2px solid var(--line);padding-left:10px}
+.gradebar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:26px 0 0}
+.main{border:2px solid var(--acclt);background:var(--deep);color:#fff;border-radius:26px;padding:14px 32px;font:inherit;font-size:16px;font-weight:800;cursor:pointer;
+  box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.main:hover{filter:brightness(1.1)}
+.ghost{border:1.5px solid var(--line);background:transparent;color:var(--mut);border-radius:24px;padding:11px 22px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.ghost:hover{color:#fff;border-color:var(--acclt)}
+.score{font-size:clamp(26px,5vw,46px);font-weight:800;margin:0 0 10px}
+.score small{display:block;font-size:15px;font-weight:600;color:var(--mut);margin-top:8px}
+nav.end{display:flex;gap:16px;flex-wrap:wrap;margin:28px 0 0}
+nav.end a{color:var(--acclt);font-weight:700;font-size:14.5px;text-decoration:none;border-bottom:1px solid transparent}
+nav.end a:hover{border-bottom-color:var(--acclt)}
+nav.end .dimx{color:var(--dim);font-size:14.5px}
+footer{padding:30px 24px 60px;text-align:center;color:var(--dim);font-size:12.5px}
+
+/* ---------- 움직임 줄이기 ---------- */
+body.nomo *,body.nomo *::before,body.nomo *::after{animation:none!important;transition:none!important}
+body.nomo .rv{opacity:1;transform:none}
+body.nomo .stage svg path.dr{stroke-dashoffset:0}
+body.nomo .stage svg g.node{opacity:1}
+body.nomo .log .li{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+  .stage svg path.dr{stroke-dashoffset:0}
+  .stage svg g.node{opacity:1}
+  .log .li{opacity:1;transform:none}
+}
+/* ---------- 인쇄 ---------- */
+@media print{
+  body{background:#fff;color:#000}
+  .topbar,.rail,.motionbtn,.down,.bignum,.geo,.gradebar{display:none!important}
+  .scene{min-height:0;padding:14px 0;page-break-inside:avoid;border-top:1px solid #ccc}
+  .rv{opacity:1;transform:none}
+  h1,h2,.score{color:#000}
+  .lead,.hint,.ctx p,.expl p,.rows .r .t,.gauge .cap,.picked .cell .k{color:#333}
+  .stage,.log,.win,.qs,.bank,.expl,.stream,.picked .cell{background:#fff;border-color:#999}
+  .card,.gap{background:#fff;color:#000;border-color:#666}
+  .expl{display:block}
+  .stream{height:auto;overflow:visible}.stream .roll{position:static;animation:none}
+  .nodec{fill:#fff;stroke:#333}.nodet{fill:#000}.nodesub{fill:#555}.link{stroke:#777}.zone{fill:#f4f4f4;stroke:#bbb}.zlabel{fill:#666}
+}
+</style>
+</head>
+<body>
+<div class="topbar" aria-hidden="true"><i></i></div>
+<div class="rail" role="navigation" aria-label="장면 이동"><button type="button" aria-label="1번째 장면으로"></button><button type="button" aria-label="2번째 장면으로"></button><button type="button" aria-label="3번째 장면으로"></button><button type="button" aria-label="4번째 장면으로"></button><button type="button" aria-label="5번째 장면으로"></button></div>
+<button type="button" class="motionbtn" aria-pressed="false">움직임 끄기</button>
+<section class="scene" id="sc-cover"><div class="geo" aria-hidden="true"><i style="width:340px;height:340px;left:-70px;top:8%;animation:drift 13s ease-in-out infinite"></i><i class="ac" style="width:190px;height:190px;right:12%;top:14%;animation:drift 17s ease-in-out infinite .6s"></i><i class="sq fl" style="width:230px;height:230px;right:-50px;bottom:6%;animation:drift 15s ease-in-out infinite 1.2s"></i><i class="sq" style="width:120px;height:120px;left:26%;bottom:12%;animation:drift 11s ease-in-out infinite .3s"></i><i class="ac" style="width:64px;height:64px;left:52%;top:22%;animation:drift 9s ease-in-out infinite .9s"></i></div><div class="inner"><p class="kicker rv">SOC 2026 · 보안관제 입문 · 실습 · 1일-④</p><div class="accent rv"></div><h1 class="rv">그림과 사례로 이해하는 주요 공격 원리</h1><p class="lead rv">같은 창구에 정상 요청과 예상 밖 요청을 흘려보내고, 처리 여력을 넘겨 보고, 네 창으로 나눠 봅니다.</p><div class="metas rv"><span class="meta">3개 장면</span><span class="meta">강의 문안 기반</span><span class="meta">저장 없음</span><span class="meta">스크롤로 진행</span></div><p class="down rv"><i></i>아래로 내려가며 하나씩 해 보세요</p></div></section>
+<section class="scene" id="sc05-1"><div class="bignum" aria-hidden="true">01</div><div class="inner"><span class="step rv">장면 1</span><h2 class="rv">같은 창구, 두 번의 요청</h2><p class="hint rv">두 요청을 차례로 흘려보내며 어디에서 갈라지는지 보세요. 이 장에는 막는 기능이 없습니다.</p><div class="stage rv"><svg viewBox="0 0 960 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="교육용 구조 그림"><g><rect class="zone" x="190" y="96" width="200" height="148" rx="14"/><text class="zlabel" x="204" y="118">인터넷 구역</text></g><g><rect class="zone" x="430" y="96" width="430" height="148" rx="14"/><text class="zlabel" x="444" y="118">내부 구역</text></g><path class="link dr" d="M 80 170 L 300 170"/><path class="link dr" d="M 300 170 L 560 170"/><path class="link dr" d="M 560 170 L 800 170"/><path class="link dr dash" d="M 300 200 C 360 274, 462 300, 536 302"/><g class="node" data-node="user" data-x="80" data-y="170"><circle class="nodec" cx="80" cy="170" r="30"/><svg x="65" y="155" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg><text class="nodet" x="80" y="220">이용자</text></g><g class="node" data-node="web" data-x="300" data-y="170"><circle class="nodec" cx="300" cy="170" r="30"/><svg x="285" y="155" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16" />
+  <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" />
+  <path d="M8 4v4" /></svg><text class="nodet" x="300" y="220">웹 표시</text></g><g class="node" data-node="app" data-x="560" data-y="170"><circle class="nodec" cx="560" cy="170" r="30"/><svg x="545" y="155" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg><text class="nodet" x="560" y="220">업무 처리</text></g><g class="node" data-node="db" data-x="800" data-y="170"><circle class="nodec" cx="800" cy="170" r="30"/><svg x="785" y="155" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0" />
+  <path d="M4 6v6a8 3 0 0 0 16 0v-6" />
+  <path d="M4 12v6a8 3 0 0 0 16 0v-6" /></svg><text class="nodet" x="800" y="220">데이터 저장</text></g><g class="node" data-node="odd" data-x="570" data-y="302"><circle class="nodec" cx="570" cy="302" r="26"/><svg x="557" y="289" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+  <path d="M21 21l-6 -6" /></svg><text class="nodet" x="570" y="348">예상 밖 처리</text><text class="nodesub" x="570" y="365">서비스가 예상하지 않은 방식</text></g></svg></div><div class="runrow rv"><span class="lbl">흘려보기</span><button type="button" class="runbtn" data-run="sc05-1" data-idx="0">정상 요청</button><button type="button" class="runbtn" data-run="sc05-1" data-idx="1">예상 밖 요청</button></div><div class="log rv"><span class="empty">아직 흘려보내지 않았습니다.</span></div><div class="expl"><p class="ttl">해설</p><p>정상 이용은 기능을 만든 목적대로 쓰는 일이고, 기능 악용은 기능의 약점을 통해 뜻하지 않은 결과를 얻는 일이다. 같은 창구에 다른 방식으로 말을 건다.</p><div class="rows"></div><p class="basis">근거 RFCH05-006 · RFCH05-007</p></div></div></section><section class="scene alt" id="sc05-2" data-cap="4"><div class="bignum" aria-hidden="true">02</div><div class="inner"><span class="step rv">장면 2</span><h2 class="rv">처리 여력을 넘겨 보기</h2><p class="hint rv">같은 창구에 요청 수를 늘려 보냅니다. 처리 여력을 넘기면 무슨 일이 생기는지 보세요.</p><div class="stage rv"><svg viewBox="0 0 960 330" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="교육용 구조 그림"><g><rect class="zone" x="400" y="74" width="440" height="196" rx="14"/><text class="zlabel" x="414" y="96">창구(처리 여력)</text></g><path class="link dr" d="M 70 170 L 640 170"/><g class="node" data-node="user" data-x="70" data-y="170"><circle class="nodec" cx="70" cy="170" r="30"/><svg x="55" y="155" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+  <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg><text class="nodet" x="70" y="220">이용자</text></g><g class="node" data-node="desk2" data-x="640" data-y="170"><circle class="nodec" cx="640" cy="170" r="30"/><svg x="625" y="155" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.325 4.317c.426 -1.756 2.924 -1.756 3.35 0a1.724 1.724 0 0 0 2.573 1.066c1.543 -.94 3.31 .826 2.37 2.37a1.724 1.724 0 0 0 1.065 2.572c1.756 .426 1.756 2.924 0 3.35a1.724 1.724 0 0 0 -1.066 2.573c.94 1.543 -.826 3.31 -2.37 2.37a1.724 1.724 0 0 0 -2.572 1.065c-.426 1.756 -2.924 1.756 -3.35 0a1.724 1.724 0 0 0 -2.573 -1.066c-1.543 .94 -3.31 -.826 -2.37 -2.37a1.724 1.724 0 0 0 -1.065 -2.572c-1.756 -.426 -1.756 -2.924 0 -3.35a1.724 1.724 0 0 0 1.066 -2.573c-.94 -1.543 .826 -3.31 2.37 -2.37c1 .608 2.296 .07 2.572 -1.065" />
+  <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /></svg><text class="nodet" x="640" y="220">업무 처리</text><text class="nodesub" x="640" y="237">한 번에 처리할 수 있는 양은 정해져 있다</text></g><text class="cap" x="430" y="300">기다리는 요청은 창구 앞에 쌓인다</text></svg></div><div class="gauge rv"><div class="bar"><i></i></div><div class="cap"><span>지금 들어온 요청 <b class="now">0건</b></span><span>한 번에 처리할 수 있는 양 4건</span></div></div><div class="runrow rv"><span class="lbl">요청 보내기</span><button type="button" class="runbtn" data-cap="sc05-2" data-n="3">3건 (한산)</button><button type="button" class="runbtn" data-cap="sc05-2" data-n="8">8건</button><button type="button" class="runbtn" data-cap="sc05-2" data-n="16">16건 (몰림)</button></div><div class="log rv"><span class="empty">아직 흘려보내지 않았습니다.</span></div><div class="expl"><p class="ttl">해설</p><p>처리 여력을 넘기면 서비스가 느려지거나 멈춘다. 혼잡과 공격은 다르다 — 누가 왜 몰리는지는 확인이 필요하다. 인기 있는 신청 첫날도 몰린다.</p><div class="rows"></div><p class="basis">근거 RFCH05-010</p></div></div></section><section class="scene" id="sc05-3" data-ex="c"><div class="bignum" aria-hidden="true">03</div><div class="inner"><span class="step rv">장면 3</span><h2 class="rv">이 장면은 어느 창에 가까울까</h2><p class="hint rv">카드를 누른 뒤 창을 누르면 카드가 그 창으로 날아갑니다. 한 장면이 두 창에 걸칠 수도 있습니다.</p><p class="disc rv">교육용 가상 장면 · 실제 사건이 아님</p><div class="bank rv" data-bank="c"><button type="button" class="card" data-ex="c" data-id="A" data-label="낯선 발신자가 급하다며 첨부를 열라고 한다" aria-pressed="false" data-answer="people"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2 -2h14a2 2 0 0 1 2 2v10a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10" />
+  <path d="M3 7l9 6l9 -6" /></svg>낯선 발신자가 급하다며 첨부를 열라고 한다</button><button type="button" class="card" data-ex="c" data-id="B" data-label="홈페이지가 갑자기 느려지고 접속이 안 된다" aria-pressed="false" data-answer="res|web"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+  <path d="M13.41 10.59l2.59 -2.59" />
+  <path d="M7 12a5 5 0 0 1 5 -5" /></svg>홈페이지가 갑자기 느려지고 접속이 안 된다</button><button type="button" class="card" data-ex="c" data-id="C" data-label="파일이 열리지 않고 이상한 안내문이 뜬다" aria-pressed="false" data-answer="file"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3v4a1 1 0 0 0 1 1h4" />
+  <path d="M17 21h-10a2 2 0 0 1 -2 -2v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2" /></svg>파일이 열리지 않고 이상한 안내문이 뜬다</button><button type="button" class="card" data-ex="c" data-id="D" data-label="조회 화면에서 예상 밖의 결과가 나온다" aria-pressed="false" data-answer="web"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16" />
+  <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" />
+  <path d="M8 4v4" /></svg>조회 화면에서 예상 밖의 결과가 나온다</button></div><div class="wins c4 rv"><div class="win" data-ex="c" data-bin="people"><button type="button" class="dropbtn" aria-label="사람 자리에 고른 카드 놓기"><h3>사람</h3><p class="sub">믿게 만들어 정보를 얻는 일</p></button><div class="hold"></div></div><div class="win" data-ex="c" data-bin="web"><button type="button" class="dropbtn" aria-label="웹 자리에 고른 카드 놓기"><h3>웹</h3><p class="sub">정상 기능의 약점을 파고드는 일</p></button><div class="hold"></div></div><div class="win" data-ex="c" data-bin="file"><button type="button" class="dropbtn" aria-label="파일과 실행 자리에 고른 카드 놓기"><h3>파일과 실행</h3><p class="sub">실행되는 것을 악용하는 일</p></button><div class="hold"></div></div><div class="win" data-ex="c" data-bin="res"><button type="button" class="dropbtn" aria-label="자원 자리에 고른 카드 놓기"><h3>자원</h3><p class="sub">처리 여력을 넘기는 일</p></button><div class="hold"></div></div></div><div class="expl"><p class="ttl">해설</p><p>네 창은 모두 정상 기능이 악용되는 자리다. B는 자원으로도, 웹으로도 볼 수 있다 — 한 장면이 두 창에 걸칠 수 있음을 부정하지 않는다.</p><div class="rows"></div><p class="basis">근거 RFCH05-002 · RFCH05-012</p></div></div></section>
+<section class="scene alt" id="sc-end"><div class="inner"><span class="step rv">마무리</span><div id="scorebox" class="rv"><p class="score"><span class="big">채점하기를 누르세요</span><small>네 창은 모두 정상 기능이 악용되는 자리다.</small></p></div><div class="gradebar rv"><button type="button" class="main" id="grade">채점하기</button><button type="button" class="ghost" id="reset">다시 하기</button><button type="button" class="ghost" id="printbtn">인쇄</button></div><nav class="end rv"><a href="SOC2026_practice_ch04.html">← 4장 기본형 실습</a><a href="SOC2026_quiz_ch04.html">4장 퀴즈 풀기</a><a href="SOC2026_practice_ch05.html">다음 실습 5장 →</a></nav></div></section>
+<footer>SOC 2026 · 보안관제 입문 · 실습 · 스크롤 구성</footer>
+<script>window.__FLOW__={"sc05-1": {"start": "user", "scenarios": [{"name": "정상 요청", "steps": [{"node": "web", "v": "pass", "text": "이용자가 화면에서 하는 신청·조회다."}, {"node": "app", "v": "pass", "text": "업무 처리가 예상한 방식으로 처리한다."}, {"node": "db", "v": "pass", "text": "저장까지 정상으로 이어진다."}], "done": "기능을 만든 목적대로 쓰는 일이다."}, {"name": "예상 밖 요청", "steps": [{"node": "web", "v": "pass", "text": "같은 창구에 다른 방식으로 말을 건다. 화면은 정상 화면이다."}, {"node": "odd", "v": "odd", "text": "막힌 것이 아니라, 서비스가 예상하지 않은 방식의 요청이 그대로 처리된 것이다. 약점이 있는 기능은 정상 화면으로도 악용될 수 있다. 막는 기능은 5장에서 본다."}], "done": ""}]}};</script>
+<script>
+(function(){
+var $=function(s,r){return (r||document).querySelector(s);};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+var byId=function(i){return document.getElementById(i);};
+window.__FLOW__=window.__FLOW__||{};
+var FLOW=window.__FLOW__;
+var VTAG={pass:'통과',stop:'멈춤',odd:'예상 밖',alert:'알림',hold:'대기'};
+var sel=null, RUN={}, graded=false;
+function still(){ return document.body.classList.contains('nomo')
+  || window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+function goTo(el){ el.scrollIntoView({behavior: still()?'auto':'smooth', block:'start'}); }
+function goTop(){ window.scrollTo({top:0, behavior: still()?'auto':'smooth'}); }
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('nomo');
+
+/* ---------- 스크롤 등장 · 진행 ---------- */
+var scenes=$$('.scene');
+var io=new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in'); });
+},{threshold:.15});
+scenes.forEach(function(s){ io.observe(s); });
+
+$$('.stage svg path.dr').forEach(function(p){
+  try{ var L=Math.ceil(p.getTotalLength())+2; p.style.setProperty('--L',L); }catch(e){}
+});
+scenes.forEach(function(sc){
+  $$('.rv',sc).forEach(function(el,k){ el.style.setProperty('--d',(Math.min(k,8)*0.075)+'s'); });
+  $$('.stage svg g.node',sc).forEach(function(g,k){ g.style.setProperty('--d',(0.35+k*0.09)+'s'); });
+});
+
+var prog=$('.topbar i'), railbtns=$$('.rail button');
+function onScroll(){
+  var h=document.documentElement.scrollHeight-window.innerHeight;
+  if(prog) prog.style.width=(h>0?(window.scrollY/h*100):0)+'%';
+  var mid=window.scrollY+window.innerHeight*0.45, cur=0;
+  scenes.forEach(function(s,i){ if(s.offsetTop<=mid) cur=i; });
+  railbtns.forEach(function(b,i){ b.classList.toggle('on',i===cur); });
+}
+window.addEventListener('scroll',onScroll,{passive:true});
+window.addEventListener('resize',onScroll);
+railbtns.forEach(function(b,i){
+  b.addEventListener('click',function(){ goTo(scenes[i]); });
+});
+onScroll();
+
+var mb=$('.motionbtn');
+if(mb) mb.addEventListener('click',function(){
+  var off=document.body.classList.toggle('nomo');
+  document.documentElement.classList.toggle('nomo',off
+    || window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  mb.textContent=off?'움직임 켜기':'움직임 끄기';
+  mb.setAttribute('aria-pressed',off?'true':'false');
+});
+
+/* ---------- 카드 놓기 ---------- */
+function cardById(ex,id){ return $('.card[data-ex="'+ex+'"][data-id="'+id+'"]'); }
+function armAll(on){ $$('.win,.gap').forEach(function(t){ t.classList.toggle('armed',!!on); }); }
+function clearSel(){ if(sel){ sel.el.classList.remove('sel'); sel.el.setAttribute('aria-pressed','false'); } sel=null; armAll(false); }
+function pick(c){
+  if(graded) return;
+  if(sel&&sel.el===c){ clearSel(); return; }
+  clearSel(); sel={el:c,ex:c.dataset.ex}; c.classList.add('sel'); c.setAttribute('aria-pressed','true'); armAll(true);
+}
+function flyTo(c,dest){
+  var a=c.getBoundingClientRect();
+  dest.appendChild(c);
+  if(still()) return;
+  var b=c.getBoundingClientRect();
+  var dx=a.left-b.left, dy=a.top-b.top;
+  if(!dx&&!dy) return;
+  c.classList.add('flying'); c.style.transform='translate('+dx+'px,'+dy+'px)';
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    c.style.transform='';
+    setTimeout(function(){ c.classList.remove('flying'); },450);
+  });});
+}
+function toBank(c){
+  var bank=$('.bank[data-bank="'+c.dataset.ex+'"]');
+  if(!bank) return;
+  delete c.dataset.bin; c.classList.remove('used');
+  flyTo(c,bank); mark();
+}
+function placeInWin(win){
+  if(graded||!sel||sel.ex!==win.dataset.ex) return;
+  var c=sel.el; c.dataset.bin=win.dataset.bin; clearSel();
+  flyTo(c,$('.hold',win)); mark();
+}
+function placeInGap(g){
+  if(graded||!sel||sel.ex!==g.dataset.ex) return;
+  var c=sel.el, prev=g.dataset.value;
+  if(prev){ var pc=cardById(g.dataset.ex,prev); if(pc) pc.classList.remove('used'); }
+  g.dataset.value=c.dataset.id; g.textContent=c.dataset.label;
+  g.classList.remove('empty'); g.classList.add('filled');
+  c.classList.add('used'); clearSel(); mark();
+}
+function clearGap(g){
+  if(graded||!g.dataset.value) return;
+  var pc=cardById(g.dataset.ex,g.dataset.value); if(pc) pc.classList.remove('used');
+  g.dataset.value=''; g.textContent=g.dataset.ph;
+  g.classList.remove('filled'); g.classList.add('empty'); mark();
+}
+document.addEventListener('click',function(e){
+  var c=e.target.closest&&e.target.closest('.card');
+  if(c){
+    if(graded) return;
+    if(c.closest('.hold')){
+      if(!(sel&&sel.el!==c&&sel.ex===c.dataset.ex)){ e.stopPropagation(); toBank(c); return; }
+    } else { e.stopPropagation(); pick(c); return; }
+  }
+  var w=e.target.closest&&e.target.closest('.win');
+  if(w){ e.stopPropagation(); placeInWin(w); return; }
+  var g=e.target.closest&&e.target.closest('.gap');
+  if(g){ e.stopPropagation(); if(sel) placeInGap(g); else clearGap(g); return; }
+  if(sel&&!(e.target.closest&&e.target.closest('.runbtn'))) clearSel();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){ clearSel(); return; }
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  var t=document.activeElement; if(!t||!t.classList) return;
+  if(t.classList.contains('dropbtn')){ e.preventDefault(); placeInWin(t.closest('.win')); }
+});
+
+/* ---------- 흐름 실행 ---------- */
+function nodePos(svg,id){
+  var g=$('[data-node="'+id+'"]',svg); if(!g) return null;
+  return {x:parseFloat(g.dataset.x),y:parseFloat(g.dataset.y)};
+}
+function animate(c,from,to,ms,alive){
+  return new Promise(function(res){
+    if(still()){ c.setAttribute('cx',to.x); c.setAttribute('cy',to.y); setTimeout(res,150); return; }
+    var t0=Date.now(), iv=setInterval(function(){
+      if(alive&&!alive()){ clearInterval(iv); res(); return; }
+      var p=Math.min(1,(Date.now()-t0)/ms), e=p<.5?2*p*p:-1+(4-2*p)*p;
+      c.setAttribute('cx',from.x+(to.x-from.x)*e); c.setAttribute('cy',from.y+(to.y-from.y)*e);
+      if(p>=1){ clearInterval(iv); res(); }
+    },16);
+  });
+}
+function logLine(box,v,text){
+  var em=box.querySelector('.empty'); if(em) box.innerHTML='';
+  var d=document.createElement('div'); d.className='li';
+  d.innerHTML='<span class="tag t-'+v+'"></span><span class="tx"></span>';
+  $('.tag',d).textContent=VTAG[v]||v;
+  $('.tx',d).textContent=text; box.appendChild(d);
+}
+function freshLayer(svg){
+  $$('.runlayer',svg).forEach(function(n){ n.remove(); });
+  var l=document.createElementNS('http://www.w3.org/2000/svg','g');
+  l.setAttribute('class','runlayer'); l.setAttribute('pointer-events','none'); svg.appendChild(l); return l;
+}
+function makeDot(layer,x,y,r){
+  var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('class','dot'); c.setAttribute('r',r||9);
+  c.setAttribute('cx',x); c.setAttribute('cy',y); layer.appendChild(c); return c;
+}
+function runScenario(sceneId,idx){
+  var sc=byId(sceneId), svg=$('.stage svg',sc), box=$('.log',sc), cfg=FLOW[sceneId];
+  if(!sc||!svg||!cfg) return;
+  var seq=(RUN[sceneId]=(RUN[sceneId]||0)+1);
+  function alive(){ return RUN[sceneId]===seq; }
+  var s=cfg.scenarios[idx]; if(!s) return;
+  var btns=$$('.runbtn',sc);
+  btns.forEach(function(b,i){ b.disabled=true; b.classList.toggle('on',i===idx); });
+  box.innerHTML='';
+  var layer=freshLayer(svg);
+  var start=nodePos(svg,cfg.start)||{x:60,y:170};
+  var c=makeDot(layer,start.x,start.y,9);
+  var at=start, i=0;
+  function done(){ btns.forEach(function(b){ b.disabled=false; }); }
+  function step(){
+    if(!alive()) return;
+    if(i>=s.steps.length){ if(s.done) logLine(box,'pass',s.done); done(); return; }
+    var st=s.steps[i++], p=nodePos(svg,st.node);
+    if(!p){ step(); return; }
+    animate(c,at,p,720,alive).then(function(){
+      if(!alive()) return;
+      at=p; logLine(box,st.v||'pass',st.text||'');
+      setTimeout(step,360);
+    });
+  }
+  setTimeout(step,200);
+}
+$$('.runbtn[data-run]').forEach(function(b){
+  b.addEventListener('click',function(){ runScenario(b.dataset.run,parseInt(b.dataset.idx,10)); });
+});
+
+/* ---------- 처리 여력 ---------- */
+function runCap(sceneId,n){
+  var sc=byId(sceneId), svg=$('.stage svg',sc), box=$('.log',sc), g=$('.gauge',sc);
+  if(!sc||!svg) return;
+  var capv=parseInt(sc.dataset.cap||'4',10);
+  var seq=(RUN[sceneId]=(RUN[sceneId]||0)+1);
+  function alive(){ return RUN[sceneId]===seq; }
+  var btns=$$('.runbtn',sc); btns.forEach(function(b){ b.disabled=true; });
+  box.innerHTML='';
+  var layer=freshLayer(svg);
+  var desk=nodePos(svg,'desk2')||{x:640,y:170};
+  g.classList.toggle('over',n>capv);
+  $('.bar i',g).style.width=Math.min(100,n/capv*100)+'%';
+  $('.now',g).textContent=n+'건';
+  var served=Math.min(n,capv);
+  var waiting=Math.max(0,Math.min(n-capv,capv));
+  var dropped=Math.max(0,n-capv*2);
+  var made=0, fin=0;
+  function finish(){
+    if(!alive()) return;
+    if(served) logLine(box,'pass','처리됨 '+served+'건 — 차례대로 처리');
+    if(waiting) logLine(box,'hold','기다림 '+waiting+'건 — 긴 기다림');
+    if(dropped) logLine(box,'stop','처리되지 않음 '+dropped+'건 — 처리 여력을 넘겼다');
+    logLine(box,'alert','혼잡과 공격은 다르다. 누가 왜 몰리는지는 확인이 필요하다.');
+    btns.forEach(function(b){ b.disabled=false; });
+  }
+  for(var k=0;k<n;k++){
+    (function(k){
+      var y=170+((k%5)-2)*18;
+      var c=makeDot(layer,70,y,7); made++;
+      var kind = k<served ? 'go' : (k<served+waiting ? 'wait' : 'drop');
+      var tgt = kind==='go' ? {x:desk.x,y:desk.y}
+              : kind==='wait' ? {x:desk.x-150,y:desk.y-52+((k%4)*26)}
+              : {x:150,y:y+92};
+      setTimeout(function(){
+        if(!alive()) return;
+        animate(c,{x:70,y:y},tgt,kind==='go'?1050:850,alive).then(function(){
+          if(!alive()) return;
+          if(kind==='go') c.setAttribute('opacity','.28');
+          else if(kind==='wait') c.setAttribute('fill','#FFDE95');
+          else { c.setAttribute('fill','#FFB4A2'); c.setAttribute('opacity','.5'); }
+          if(++fin===made) finish();
+        });
+      },k*110);
+    })(k);
+  }
+}
+$$('.runbtn[data-cap]').forEach(function(b){
+  b.addEventListener('click',function(){
+    $$('.runbtn[data-cap]',b.closest('.scene')).forEach(function(x){ x.classList.toggle('on',x===b); });
+    runCap(b.dataset.cap,parseInt(b.dataset.n,10));
+  });
+});
+
+/* ---------- 흐르는 기록 붙잡기 ---------- */
+function holdStream(sc,on){
+  var st=$('.stream',sc), roll=$('.roll',st), row=$('.row.pick',roll), pk=$('.picked',sc);
+  st.classList.toggle('hold',on);
+  if(on&&row){
+    var off=Math.max(0,row.offsetTop-(st.clientHeight/2-row.offsetHeight/2));
+    roll.style.animation='none'; roll.style.transform='translateY(-'+off+'px)';
+  } else {
+    roll.style.animation=''; roll.style.transform='';
+  }
+  if(pk) pk.style.display=on?'grid':'none';
+}
+$$('[data-hold]').forEach(function(b){
+  b.addEventListener('click',function(){
+    var sc=byId(b.dataset.hold);
+    var on=!$('.stream',sc).classList.contains('hold');
+    holdStream(sc,on);
+    b.textContent=on?'다시 흐르게':'한 줄 붙잡기';
+    b.classList.toggle('on',on);
+  });
+});
+
+/* ---------- 채점 ---------- */
+function gradeScene(sc){
+  var ok=0,total=0,rows=[];
+  $$('.gap',sc).forEach(function(g){
+    total++;
+    var acc=(g.dataset.accept||'').split('|').filter(Boolean), v=g.dataset.value||'';
+    var good=acc.indexOf(v)>=0; if(good)ok++;
+    g.classList.add(good?'ok':'no');
+    var want=acc.map(function(id){var c=cardById(g.dataset.ex,id);return c?c.dataset.label:id;}).join(' 또는 ');
+    var got=v?(cardById(g.dataset.ex,v)||{dataset:{}}).dataset.label:'비어 있음';
+    rows.push({g:good,t:'<b>'+(g.dataset.name||g.dataset.ph)+'</b> — 놓은 것: '+got+(good?'':' / 정답: '+want)});
+  });
+  var ws=$$('.win',sc);
+  if(ws.length){
+    var names={}; ws.forEach(function(w){ names[w.dataset.bin]=$('h3',w).textContent; });
+    $$('.card[data-answer]',sc).forEach(function(c){
+      total++;
+      var want=c.dataset.answer.split('|'), got=c.dataset.bin||'';
+      var good=want.indexOf(got)>=0; if(good)ok++;
+      rows.push({g:good,t:'<b>'+c.dataset.label+'</b> → '+(names[got]||'놓지 않음')
+        +(good?'':' / 정답: '+want.map(function(w){return names[w];}).join(' 또는 '))});
+    });
+  }
+  $$('[data-qgroup]',sc).forEach(function(q){
+    total++;
+    var opts=$$('input[name="'+q.dataset.qgroup+'"]',q);
+    var chosen=opts.filter(function(o){return o.checked;})[0];
+    var ai=parseInt(q.dataset.correct,10);
+    var good=chosen&&parseInt(chosen.value,10)===ai; if(good)ok++;
+    opts.forEach(function(o,k){ var l=o.closest('.opt'); if(k===ai)l.classList.add('is-answer'); if(chosen===o)l.classList.add('is-chosen'); o.disabled=true; });
+    rows.push({g:good,t:'<b>'+(q.dataset.qlabel||'선택')+'</b> — 고른 것: '+(chosen?chosen.dataset.label:'고르지 않음')
+      +(good?'':' / 정답: '+(opts[ai]?opts[ai].dataset.label:''))});
+  });
+  return {ok:ok,total:total,rows:rows};
+}
+function mark(){
+  scenes.forEach(function(sc){
+    if(!sc.dataset.ex) return;
+    var need=$$('.gap',sc).length+$$('.card[data-answer]',sc).length+$$('[data-qgroup]',sc).length;
+    var have=$$('.gap',sc).filter(function(g){return g.dataset.value;}).length
+            +$$('.card[data-answer]',sc).filter(function(c){return c.dataset.bin;}).length
+            +$$('[data-qgroup]',sc).filter(function(q){return $('input:checked',q);}).length;
+    sc.classList.toggle('done',need>0&&have>=need);
+  });
+}
+$$('.opt input').forEach(function(o){ o.addEventListener('change',mark); });
+
+var gbtn=byId('grade');
+if(gbtn) gbtn.addEventListener('click',function(){
+  graded=true; clearSel();
+  var ok=0,total=0;
+  scenes.forEach(function(sc){
+    sc.classList.add('graded');
+    if(!sc.dataset.ex) return;
+    var r=gradeScene(sc); ok+=r.ok; total+=r.total;
+    var box=$('.rows',sc);
+    if(box) box.innerHTML=r.rows.map(function(x){
+      return '<div class="r '+(x.g?'g':'b')+'"><span class="m">'+(x.g?'O':'X')+'</span><span class="t">'+x.t+'</span></div>';
+    }).join('');
+  });
+  document.body.classList.add('graded');
+  var s=$('#scorebox .score .big'); if(s) s.textContent=total+'개 중 '+ok+'개 정답';
+  var last=byId('sc-end');
+  if(last){ last.classList.add('in'); goTo(last); }
+});
+var rbtn=byId('reset');
+if(rbtn) rbtn.addEventListener('click',function(){
+  graded=false; document.body.classList.remove('graded');
+  for(var k in RUN){ RUN[k]=(RUN[k]||0)+1; }
+  clearSel();
+  $$('.card').forEach(function(c){
+    delete c.dataset.bin; c.classList.remove('used','sel'); c.setAttribute('aria-pressed','false');
+    var bank=$('.bank[data-bank="'+c.dataset.ex+'"]'); if(bank) bank.appendChild(c);
+  });
+  $$('.gap').forEach(function(g){ g.dataset.value=''; g.textContent=g.dataset.ph; g.className='gap empty'; });
+  $$('.opt').forEach(function(o){ o.classList.remove('is-answer','is-chosen'); });
+  $$('.opt input').forEach(function(o){ o.checked=false; o.disabled=false; });
+  scenes.forEach(function(sc){ sc.classList.remove('graded','done'); });
+  $$('.rows').forEach(function(r){ r.innerHTML=''; });
+  $$('.log').forEach(function(l){ l.innerHTML='<span class="empty">아직 흘려보내지 않았습니다.</span>'; });
+  $$('.runlayer').forEach(function(l){ l.remove(); });
+  $$('.runbtn').forEach(function(b){ b.disabled=false; b.classList.remove('on'); });
+  $$('.gauge').forEach(function(g){ g.classList.remove('over'); $('.bar i',g).style.width='0%'; $('.now',g).textContent='0건'; });
+  $$('[data-hold]').forEach(function(b){
+    holdStream(byId(b.dataset.hold),false); b.textContent='한 줄 붙잡기'; b.classList.remove('on');
+  });
+  var s=$('#scorebox .score .big'); if(s) s.textContent='다시 풀어 보세요';
+  goTop();
+});
+var pbtn=byId('printbtn'); if(pbtn) pbtn.addEventListener('click',function(){ window.print(); });
+mark();
+})();
+</script>
+</body>
+</html>

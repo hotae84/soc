@@ -1,0 +1,199 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 실습(모션) · 1장 보안관제는 무엇을 하는 일인가</title><style>
+:root{--g:#1E4E9A;--dg:#143A75;--sky:#D9E5F6;--ink:#0B1630}
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#fff;background:var(--ink);overflow:hidden}
+.bg{position:fixed;inset:0;overflow:hidden;background:radial-gradient(1200px 700px at 15% 20%,rgba(30,78,154,.55),transparent 60%),
+ radial-gradient(900px 600px at 85% 80%,rgba(20,58,117,.6),transparent 60%),var(--ink)}
+.bg i{position:absolute;border-radius:50%;border:1.5px solid rgba(255,255,255,.08);animation:drift 26s linear infinite}
+.bg i:nth-child(1){width:46vmax;height:46vmax;left:-12vmax;top:-10vmax}
+.bg i:nth-child(2){width:30vmax;height:30vmax;right:-8vmax;bottom:-12vmax;animation-duration:34s;animation-direction:reverse}
+@keyframes drift{from{transform:rotate(0) translateX(1.2vmax) rotate(0)}to{transform:rotate(360deg) translateX(1.2vmax) rotate(-360deg)}}
+.hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:14px;padding:14px 18px;font-size:13px;color:rgba(255,255,255,.78)}
+.hud .k{font-weight:700;letter-spacing:.04em} .hud .bar{flex:1;height:4px;background:rgba(255,255,255,.14);border-radius:2px;overflow:hidden}
+.hud .bar i{display:block;height:100%;width:0;background:#fff;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.hud .steps{display:flex;gap:14px} .hud .steps span{color:rgba(255,255,255,.78)} .hud .steps span.on{color:#fff;font-weight:800;text-decoration:underline;text-underline-offset:4px}
+.mbtn{background:transparent;color:rgba(255,255,255,.85);border:1.5px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.scene{position:fixed;inset:66px 20px 20px;display:flex;flex-direction:column;overflow:auto;-webkit-overflow-scrolling:touch;opacity:0;visibility:hidden;transform:translateX(6vw);
+ transition:opacity .45s,transform .55s cubic-bezier(.2,.8,.2,1),visibility 0s .55s}
+.scene.on{opacity:1;visibility:visible;transform:none;transition:opacity .45s,transform .55s cubic-bezier(.2,.8,.2,1)}
+.scene.out{opacity:0;transform:translateX(-6vw)}
+.inner{width:min(960px,100%);outline:none;margin:auto;padding:4px 0}
+.chip{display:inline-block;background:rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:13px;margin-bottom:12px}
+h1{font-size:clamp(26px,4.4vw,42px);line-height:1.25;margin:0 0 12px} h2{font-size:clamp(20px,3vw,28px);margin:0 0 6px}
+p.lead{color:rgba(255,255,255,.82);margin:0 0 18px;font-size:15px}
+.go,.next{background:#fff;color:var(--dg);border:0;border-radius:13px;padding:12px 22px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.go:disabled,.next:disabled{opacity:.4;cursor:default;box-shadow:none}
+/* 카드 더미 */
+.deck{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 18px;min-height:52px}
+.card{position:relative;background:rgba(255,255,255,.96);color:#111;border:2px solid transparent;border-radius:12px;padding:10px 14px;font:inherit;font-size:14.5px;
+ cursor:pointer;text-align:left;opacity:0;transform:translateY(14px);transition:transform .2s,box-shadow .2s,border-color .2s}
+.scene.on .deck .card{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}
+.card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.22)} .card:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.card.sel{border-color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.35)}
+.card.ok{border-color:var(--g)} .card.ng{border-color:#111;border-style:dashed;animation:shake .45s both}
+.card.ok::after{content:"맞음";position:absolute;right:8px;top:-9px;background:var(--g);color:#fff;font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px}
+.card.ng::after{content:"다시";position:absolute;right:8px;top:-9px;background:#111;color:#fff;font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px}
+@keyframes up{to{opacity:1;transform:none}}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+.flyer{position:fixed;z-index:50;pointer-events:none;background:#fff;color:#111;border-radius:12px;padding:10px 14px;font-size:14.5px;box-shadow:0 14px 30px rgba(0,0,0,.35);transition:transform .55s cubic-bezier(.2,.8,.2,1),opacity .55s}
+/* 흐름선 위의 칸 */
+.flow{position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:6px}
+.flow::before{content:"";position:absolute;left:4%;right:4%;top:22px;height:2px;background:rgba(255,255,255,.3);z-index:0}
+.bin{position:relative;z-index:1;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;background:rgba(255,255,255,.08);border:1.5px dashed rgba(255,255,255,.35);border-radius:14px;padding:12px 12px 10px;min-height:150px;cursor:pointer;text-align:left;font:inherit;color:#fff;
+ transition:background .2s,border-color .2s,transform .2s;opacity:0}
+.scene.on .bin{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}
+.bin .no{width:28px;height:28px;border-radius:50%;background:#fff;color:var(--dg);display:grid;place-items:center;font-weight:900;font-size:13px;margin:-2px 0 8px}
+.bin h3{margin:0 0 2px;font-size:16px} .bin .sub{margin:0 0 10px;font-size:12.5px;color:rgba(255,255,255,.7);line-height:1.45}
+.bin:hover,.bin.armed{background:rgba(255,255,255,.16);border-color:#fff} .bin.armed{transform:translateY(-3px)}
+.drop{margin:0 0 8px;background:transparent;color:rgba(255,255,255,.85);border:1.5px dashed rgba(255,255,255,.45);border-radius:9px;padding:7px 10px;font:inherit;font-size:12.5px;cursor:pointer}
+.bin.armed .drop{background:#fff;color:var(--dg);border-style:solid;font-weight:800} .drop:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.drop:disabled,.card:disabled{cursor:default;opacity:.85}
+.disc{margin:10px 0 0;color:rgba(255,255,255,.78);font-size:12.5px}
+.bin .in{display:flex;flex-direction:column;gap:6px} .bin .in .card{animation:none;opacity:1;transform:none;font-size:13.5px;padding:8px 10px;cursor:default}
+.cols .flow{grid-template-columns:repeat(3,1fr)} .cols .flow::before{display:none}
+/* 알림 분기 */
+.alert{display:inline-flex;gap:10px;align-items:center;background:#fff;color:#111;border-radius:14px;padding:14px 18px;font-weight:700;font-size:16px;margin:4px 0 18px;position:relative}
+.alert::before{content:"";position:absolute;inset:-8px;border-radius:20px;border:2px solid rgba(255,255,255,.5);animation:pulse 1.8s ease-out infinite}
+@keyframes pulse{0%{opacity:.9;transform:scale(.96)}100%{opacity:0;transform:scale(1.12)}}
+.alert b{width:30px;height:30px;border-radius:9px;background:var(--sky);color:var(--dg);display:grid;place-items:center;font-size:14px}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.sit{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px 16px;opacity:0} .scene.on .sit{animation:up .55s cubic-bezier(.2,.8,.2,1) forwards}
+.sit b{display:inline-block;background:#fff;color:var(--dg);border-radius:7px;padding:2px 9px;font-size:12.5px;margin-bottom:6px}
+.qbox{background:rgba(255,255,255,.06);border-radius:14px;padding:14px 16px;margin-top:10px;opacity:0} .scene.on .qbox{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}
+.qq{font-weight:800;font-size:16.5px;margin:0 0 10px}
+.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:rgba(255,255,255,.96);color:#111;border:2px solid transparent;border-radius:12px;padding:11px 14px;margin:7px 0;font:inherit;font-size:14.5px;line-height:1.5;cursor:pointer;transition:transform .2s,border-color .2s,opacity .3s}
+.opt .m{flex:0 0 26px;height:26px;border-radius:8px;background:var(--sky);color:var(--dg);display:grid;place-items:center;font-weight:800;font-size:12px}
+.opt:hover{transform:translateY(-2px)} .opt:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.done .opt{cursor:default;transform:none} .done .opt.dim{opacity:.38} .done .opt.ok{border-color:var(--g);transform:scale(1.015)} .done .opt.ok .m{background:var(--g);color:#fff}
+.done .opt.ng{border-color:#111;border-style:dashed;animation:shake .45s both}
+.fb{margin-top:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:14px 16px;opacity:0;transform:translateY(14px);transition:opacity .4s,transform .5s;pointer-events:none}
+.show .fb{opacity:1;transform:none;pointer-events:auto}
+.tag{display:inline-block;background:#fff;color:var(--dg);font-weight:800;font-size:12px;border-radius:6px;padding:3px 9px;margin-right:8px} .tag.ng{background:rgba(255,255,255,.25);color:#fff}
+.fb .ex{margin-top:8px;font-size:14.5px;line-height:1.65} .fb .bs{margin-top:6px;font-size:12.5px;color:rgba(255,255,255,.82)} .fb .next{margin-top:12px;font-size:14px;padding:10px 18px}
+.ctrl{display:flex;gap:10px;align-items:center;margin-top:14px} .hintx{color:rgba(255,255,255,.7);font-size:13px}
+/* 결과 */
+.res{text-align:center} .ring{width:170px;height:170px;margin:0 auto 12px;position:relative} .ring svg{transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:12} .ring .tr{stroke:rgba(255,255,255,.15)} .ring .pr{stroke:#fff;stroke-linecap:round;stroke-dasharray:440;stroke-dashoffset:440;transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)}
+.ring .n{position:absolute;inset:0;display:grid;place-items:center;font-size:42px;font-weight:900} .ring .n small{display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,.7)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.recap{display:grid;gap:8px;text-align:left;margin:0 auto 20px;max-width:620px}
+.recap div{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;font-size:14px;opacity:0} .scene.on .recap div{animation:up .5s forwards}
+.recap b{flex:0 0 auto;border-radius:8px;padding:2px 8px;font-size:12px;background:#fff;color:var(--dg)}
+.links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.links a,.links button{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45);border-radius:11px;padding:10px 16px;font:inherit;font-weight:700;font-size:14px;text-decoration:none;cursor:pointer} .links .pri{background:#fff;color:var(--dg);border-color:#fff}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important} .card,.bin,.sit,.qbox,.recap div{opacity:1!important;transform:none!important} .flyer{display:none}}
+html.nomo *,html.nomo *::before,html.nomo *::after{animation:none!important;transition:none!important}
+html.nomo .card,html.nomo .bin,html.nomo .sit,html.nomo .qbox,html.nomo .recap div{opacity:1!important;transform:none!important} html.nomo .flyer{display:none} html.nomo .scene{transform:none!important}
+@media(max-width:720px){.flow,.cols .flow{grid-template-columns:1fr 1fr} .flow::before{display:none} .split{grid-template-columns:1fr} .hud .steps{display:none} .scene{inset:60px 12px 12px}}
+</style></head><body>
+<div class="bg" aria-hidden="true"><i></i><i></i></div>
+<header class="hud"><span class="k">SOC 2026 · 실습 · 1일-①</span><div class="bar"><i></i></div>
+<div class="steps"><span>네 업무</span><span>같은 알림</span><span>세 역할</span></div><button class="mbtn" type="button" aria-pressed="false">움직임 끄기</button></header>
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+<section class="scene on" id="s0"><div class="inner" tabindex="-1"><span class="chip">CHAPTER 01</span><h1>보안관제는 무엇을 하는 일인가</h1>
+<p class="lead">강의에서 한 활동 셋을 혼자 다시 해 봅니다. 카드를 누른 뒤 칸을 누르면 날아가 들어갑니다. 입력은 어디에도 저장되지 않습니다.</p>
+<button class="go" type="button">시작하기</button></div></section>
+<section class="scene" id="s1"><div class="inner" tabindex="-1"><span class="chip">실습 1 · 1장 6~7쪽</span><h2>이 행동은 어떤 업무에 가까울까</h2><p class="lead">카드를 누른 뒤 네 칸 중 하나를 누르면 날아가 들어갑니다.</p><div class="deck"><button type="button" class="card" data-id="perm" aria-pressed="false" style="animation-delay:0ms">접근 권한을 필요한 범위로 정한다</button><button type="button" class="card" data-id="alert" aria-pressed="false" style="animation-delay:70ms">정해진 조건에 맞는 의심 활동을 알린다</button><button type="button" class="card" data-id="ask" aria-pressed="false" style="animation-delay:140ms">담당자에게 정상 업무인지 묻는다</button><button type="button" class="card" data-id="act" aria-pressed="false" style="animation-delay:210ms">승인된 범위의 조치를 수행한다</button></div><div class="flow"><div class="bin" data-bin="prev" role="group" aria-labelledby="bh-prev-prev" style="animation-delay:140ms"><span class="no">1</span><h3 id="bh-prev-prev">예방</h3><p class="sub">문제가 생길 가능성을 줄인다</p><button type="button" class="drop" aria-label="예방 칸에 놓기">여기에 놓기</button><div class="in"></div></div><div class="bin" data-bin="detect" role="group" aria-labelledby="bh-prev-detect" style="animation-delay:230ms"><span class="no">2</span><h3 id="bh-prev-detect">탐지</h3><p class="sub">의심스러운 신호를 알아챈다</p><button type="button" class="drop" aria-label="탐지 칸에 놓기">여기에 놓기</button><div class="in"></div></div><div class="bin" data-bin="check" role="group" aria-labelledby="bh-prev-check" style="animation-delay:320ms"><span class="no">3</span><h3 id="bh-prev-check">확인</h3><p class="sub">무슨 상황인지 살핀다</p><button type="button" class="drop" aria-label="확인 칸에 놓기">여기에 놓기</button><div class="in"></div></div><div class="bin" data-bin="resp" role="group" aria-labelledby="bh-prev-resp" style="animation-delay:410ms"><span class="no">4</span><h3 id="bh-prev-resp">대응</h3><p class="sub">필요한 조치를 협의하고 수행한다</p><button type="button" class="drop" aria-label="대응 칸에 놓기">여기에 놓기</button><div class="in"></div></div></div><div class="ctrl"><button class="go" type="button" disabled>확인하기</button><span class="hintx">칸 안의 카드를 누르면 되돌아옵니다</span></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene" id="s2"><div class="inner" tabindex="-1"><span class="chip">실습 2 · 1장 8~9쪽</span><h2>같은 알림, 다른 상황</h2><p class="lead">공통 알림 하나를 두고 두 상황을 비교합니다. 알림만으로 무엇까지 알 수 있는지 골라 보세요.</p><div class="alert"><b>!</b>로그인 실패가 여러 번 감지되었습니다.</div><div class="split"><div class="sit" style="animation-delay:350ms"><b>상황 A</b><div>본인이 자기 자리에서 비밀번호를 잘못 입력했다.</div></div><div class="sit" style="animation-delay:550ms"><b>상황 B</b><div>다른 곳에서 이 계정으로 로그인이 시도되었다.</div></div></div><p class="disc">교육용 가상 상황 · 실제 로그나 탐지 조건이 아님</p><div class="qbox" data-q="0" style=";animation-delay:900ms"><p class="qq">Q1. 알림만 보고 지금이 A인지 B인지 알 수 있을까?</p><button type="button" class="opt" data-k="0"><span class="m">①</span><span>알 수 있다 — 실패 횟수로 구분된다</span></button><button type="button" class="opt" data-k="1"><span class="m">②</span><span>알 수 없다 — 어디에서 시도했는지 등 확인이 필요하다</span></button><button type="button" class="opt" data-k="2"><span class="m">③</span><span>알 수 있다 — 알림은 사고를 뜻한다</span></button><button type="button" class="opt" data-k="3"><span class="m">④</span><span>알 수 없지만 곧 사고로 보아야 한다</span></button></div><div class="qbox" data-q="1" style="display:none;animation-delay:1000ms"><p class="qq">Q2. 경보와 사고의 관계로 옳은 것은?</p><button type="button" class="opt" data-k="0"><span class="m">①</span><span>경보는 확인할 필요가 있다는 신호, 사고는 확인을 통해 드러난 침해나 피해 상황</span></button><button type="button" class="opt" data-k="1"><span class="m">②</span><span>경보가 울리면 사고가 발생한 것이다</span></button><button type="button" class="opt" data-k="2"><span class="m">③</span><span>사고가 먼저 나고 경보가 뒤따른다</span></button><button type="button" class="opt" data-k="3"><span class="m">④</span><span>둘은 법에서 같은 말이다</span></button></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene cols" id="s3"><div class="inner" tabindex="-1"><span class="chip">실습 3 · 1장 10쪽</span><h2>통보가 오면 누가 무엇을 하는가</h2><p class="lead">가상 통보를 받은 상황입니다. 여섯 장을 세 역할로 나눠 놓으세요.</p><div class="alert"><b>!</b>가상 통보 — 업무 포털의 접근 이상 확인이 필요합니다.</div><div class="deck"><button type="button" class="card" data-id="m1" aria-pressed="false" style="animation-delay:0ms">이상 징후를 살피고 확인할 내용 전달</button><button type="button" class="card" data-id="m2" aria-pressed="false" style="animation-delay:70ms">업무 영향 확인 및 필요한 판단 연결</button><button type="button" class="card" data-id="m3" aria-pressed="false" style="animation-delay:140ms">시스템 상태 확인 및 권한 범위 내 조치</button><button type="button" class="card" data-id="m4" aria-pressed="false" style="animation-delay:210ms">알리는 담당</button><button type="button" class="card" data-id="m5" aria-pressed="false" style="animation-delay:280ms">판단하고 연결하는 담당</button><button type="button" class="card" data-id="m6" aria-pressed="false" style="animation-delay:350ms">점검하고 조치하는 담당</button></div><div class="flow"><div class="bin" data-bin="mon" role="group" aria-labelledby="bh-mon-mon" style="animation-delay:140ms"><span class="no">·</span><h3 id="bh-mon-mon">관제 담당</h3><p class="sub">센터 또는 위탁업체</p><button type="button" class="drop" aria-label="관제 담당 칸에 놓기">여기에 놓기</button><div class="in"></div></div><div class="bin" data-bin="org" role="group" aria-labelledby="bh-mon-org" style="animation-delay:230ms"><span class="no">·</span><h3 id="bh-mon-org">기관 담당</h3><p class="sub">&nbsp;</p><button type="button" class="drop" aria-label="기관 담당 칸에 놓기">여기에 놓기</button><div class="in"></div></div><div class="bin" data-bin="ops" role="group" aria-labelledby="bh-mon-ops" style="animation-delay:320ms"><span class="no">·</span><h3 id="bh-mon-ops">시스템 운영 담당</h3><p class="sub">&nbsp;</p><button type="button" class="drop" aria-label="시스템 운영 담당 칸에 놓기">여기에 놓기</button><div class="in"></div></div></div><div class="ctrl"><button class="go" type="button" disabled>확인하기</button><span class="hintx">세 역할이 곧 세 조직은 아닙니다</span></div><p class="disc">교육용 가상 통보 · 기관별 연락·보고 체계는 다를 수 있음</p><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene res" id="s4"><div class="inner" tabindex="-1"><div class="ring"><svg viewBox="0 0 160 160" width="170" height="170"><circle class="tr" cx="80" cy="80" r="70"/><circle class="pr" cx="80" cy="80" r="70"/></svg><div class="n" aria-hidden="true"><div><span>0</span><small></small></div></div><p class="sr" role="status" aria-live="polite"></p></div><h2>보안관제는 무엇을 하는 일인가</h2><p class="lead" style="text-align:center">네 업무는 이어져 있고, 경보는 확인의 시작이며, 세 역할이 통보를 잇습니다.</p><div class="recap"></div><div class="links"><button class="again pri" type="button">다시 하기</button><a href="SOC2026_practice_ch01.html">기본형 실습으로</a><a href="SOC2026_quiz_ch01_motion.html">이 장 퀴즈(모션)</a></div></div></section>
+<script>window.EX={"ex1": {"title": "이 행동은 어떤 업무에 가까울까", "basis": "현행 1장 6~7쪽 · 원본 계약 RFCH01-006 · RFCH01-007", "hint": "카드를 누른 뒤 네 칸 중 하나를 누르면 날아가 들어갑니다.", "expl": "네 업무는 이어져 있고, 하나의 업무가 여러 역할과 이어질 수도 있다. 확인 결과에 따라 필요한 행동을 정한다.", "bins": [["prev", "예방", "문제가 생길 가능성을 줄인다"], ["detect", "탐지", "의심스러운 신호를 알아챈다"], ["check", "확인", "무슨 상황인지 살핀다"], ["resp", "대응", "필요한 조치를 협의하고 수행한다"]], "cards": [["perm", "접근 권한을 필요한 범위로 정한다", "prev"], ["alert", "정해진 조건에 맞는 의심 활동을 알린다", "detect"], ["ask", "담당자에게 정상 업무인지 묻는다", "check"], ["act", "승인된 범위의 조치를 수행한다", "resp"]]}, "ex2": {"title": "같은 알림, 다른 상황", "basis": "현행 1장 8~9쪽 · 원본 계약 RFCH01-008 · RFCH01-009", "alert": "로그인 실패가 여러 번 감지되었습니다.", "A": "본인이 자기 자리에서 비밀번호를 잘못 입력했다.", "B": "다른 곳에서 이 계정으로 로그인이 시도되었다.", "expl": "상황을 확인한 뒤 필요한 대응을 협의한다. A도 반복되면 확인 대상이고, B는 사람이 직접 입력한 것이 아닐 수도 있다.", "qs": [["알림만 보고 지금이 A인지 B인지 알 수 있을까?", ["알 수 있다 — 실패 횟수로 구분된다", "알 수 없다 — 어디에서 시도했는지 등 확인이 필요하다", "알 수 있다 — 알림은 사고를 뜻한다", "알 수 없지만 곧 사고로 보아야 한다"], 1], ["경보와 사고의 관계로 옳은 것은?", ["경보는 확인할 필요가 있다는 신호, 사고는 확인을 통해 드러난 침해나 피해 상황", "경보가 울리면 사고가 발생한 것이다", "사고가 먼저 나고 경보가 뒤따른다", "둘은 법에서 같은 말이다"], 0]]}, "ex3": {"title": "통보가 오면 누가 무엇을 하는가", "basis": "현행 1장 10쪽 · 원본 계약 RFCH01-010", "notice": "업무 포털의 접근 이상 확인이 필요합니다.", "hint": "가상 통보를 받은 상황입니다. 여섯 장을 세 역할로 나눠 놓으세요.", "expl": "조치는 담당 권한과 승인 절차에 따라 협의하고, 보고할 곳은 기관의 체계를 따른다. 세 역할이 곧 세 조직은 아니며 겸직할 수 있다.", "bins": [["mon", "관제 담당", "센터 또는 위탁업체"], ["org", "기관 담당", ""], ["ops", "시스템 운영 담당", ""]], "cards": [["m1", "이상 징후를 살피고 확인할 내용 전달", "mon"], ["m2", "업무 영향 확인 및 필요한 판단 연결", "org"], ["m3", "시스템 상태 확인 및 권한 범위 내 조치", "ops"], ["m4", "알리는 담당", "mon"], ["m5", "판단하고 연결하는 담당", "org"], ["m6", "점검하고 조치하는 담당", "ops"]]}};</script><script>
+(function(){
+ var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+ var EX=window.EX, scenes=$$('.scene'), cur=0, score={ok:0,total:0}, log=[];
+ var nomo=function(){return document.documentElement.classList.contains('nomo')};
+ // 움직임: 시스템이 줄이기면 끄고 단추를 잠근다. 아니면 사용자의 선택을 이 탭 안에서 기억한다(저장 실패해도 동작).
+ var OSR=matchMedia('(prefers-reduced-motion: reduce)').matches, mb=$('.mbtn');
+ function store(v){try{sessionStorage.setItem('soc.nomo',v?'1':'0');}catch(e){}}
+ function stored(){try{return sessionStorage.getItem('soc.nomo');}catch(e){return null;}}
+ if(OSR){document.documentElement.classList.add('nomo');mb.disabled=true;mb.textContent='움직임 꺼짐 · 시스템 설정';mb.setAttribute('aria-pressed','true');}
+ else{ if(stored()==='1')document.documentElement.classList.add('nomo');
+   var syncM=function(){mb.textContent=nomo()?'움직임 켜기':'움직임 끄기';mb.setAttribute('aria-pressed',nomo());};
+   mb.addEventListener('click',function(){var off=document.documentElement.classList.toggle('nomo');store(off);syncM();}); syncM(); }
+ var ft=null; function focusLater(sel,ms){ if(ft)clearTimeout(ft); ft=setTimeout(function(){var el=$(sel); if(el&&el.closest('.scene.on'))el.focus({preventScroll:true});},ms); }
+ function show(k){cur=k; scenes.forEach(function(s,j){s.classList.toggle('out',j<k);s.classList.toggle('on',j===k);});
+   $('.hud .bar i').style.width=(Math.max(0,k-1)/3*100)+'%';
+   $$('.hud .steps span').forEach(function(s,j){s.classList.toggle('on',j===k-1);});
+   var sc=$('.scene.on'); if(sc){sc.scrollTop=0;} focusLater('.scene.on .inner',60);}
+
+ // ── 분류 장면 (ex1·ex3) : 카드 → 칸. 배치는 **즉시 확정**, 날아가는 연출은 실제 카드의 FLIP으로 얹는다.
+ function classify(sec,spec){
+   var sel=null, placed={}, deck=$('.deck',sec), gbtn=$('.go',sec);
+   function flip(c, fromRect){
+     if(nomo()) return; var b=c.getBoundingClientRect(), dx=fromRect.left-b.left, dy=fromRect.top-b.top; if(!dx&&!dy) return;
+     c.style.transition='none'; c.style.transform='translate('+dx+'px,'+dy+'px)';
+     requestAnimationFrame(function(){ c.style.transition='transform .55s cubic-bezier(.2,.8,.2,1)'; c.style.transform=''; setTimeout(function(){ c.style.transition=''; },600); });
+   }
+   function arm(on){$$('.bin',sec).forEach(function(b){b.classList.toggle('armed',on);});}
+   function clearSel(){if(sel){sel.classList.remove('sel');sel.setAttribute('aria-pressed','false');} sel=null; arm(false);}
+   function sync(){ gbtn.disabled = Object.keys(placed).length!==spec.cards.length; }
+   function place(c, bin){ var from=c.getBoundingClientRect(); c.classList.remove('sel'); c.setAttribute('aria-pressed','false');
+     bin.querySelector('.in').appendChild(c); placed[c.dataset.id]=bin.dataset.bin; sync(); flip(c, from);
+     $('#live').textContent=c.textContent+' → '+bin.querySelector('h3').textContent; }
+   function unplace(c){ var from=c.getBoundingClientRect(); delete placed[c.dataset.id]; deck.appendChild(c); sync(); flip(c, from);
+     $('#live').textContent=c.textContent+' — 더미로 되돌림'; }
+   $$('.deck .card',sec).forEach(function(c){
+     c.addEventListener('click',function(){
+       if(sec.classList.contains('done'))return;
+       if(c.closest('.in')){ if(!sel) unplace(c); return; }
+       if(sel===c){clearSel();return;} clearSel(); sel=c; c.classList.add('sel'); c.setAttribute('aria-pressed','true'); arm(true);
+     });
+   });
+   $$('.bin',sec).forEach(function(b){
+     function tryPlace(ev){ if(sec.classList.contains('done')||!sel)return; if(ev&&ev.target.closest('.in .card'))return; var c=sel; clearSel(); place(c,b); }
+     b.addEventListener('click',tryPlace);
+     $('.drop',b).addEventListener('click',function(ev){ ev.stopPropagation(); tryPlace(null); });
+   });
+   gbtn.addEventListener('click',function(){
+     if(sec.classList.contains('done')) return;
+     var ok=0; spec.cards.forEach(function(cd){ var c=$('.card[data-id="'+cd[0]+'"]',sec), right=placed[cd[0]]===cd[2]; if(right)ok++; c.classList.add(right?'ok':'ng'); });
+     score.ok+=ok; score.total+=spec.cards.length; log.push({t:spec.title,ok:ok,n:spec.cards.length});
+     var rows=spec.cards.map(function(cd){var bn=spec.bins.filter(function(b){return b[0]===cd[2]})[0][1]; return '<li>'+cd[1]+' <b>→</b> '+bn+'</li>';}).join('');
+     $('.fb',sec).innerHTML='<span class="tag'+(ok===spec.cards.length?'':' ng')+'">'+ok+' / '+spec.cards.length+' 맞음</span><div class="ex">'+spec.expl+'</div>'
+       +'<details style="margin-top:8px;font-size:13.5px"><summary style="cursor:pointer">올바른 자리 보기</summary><ul style="margin:6px 0 0;padding-left:20px">'+rows+'</ul></details>'
+       +'<div class="bs">근거 · '+spec.basis+'</div><button class="next" type="button">다음 →</button>';
+     sec.classList.add('done','show'); gbtn.disabled=true; clearSel();
+     $$('.card, .drop',sec).forEach(function(el){ el.disabled=true; el.setAttribute('aria-disabled','true'); });
+     $('#live').textContent=spec.title+' — '+ok+' / '+spec.cards.length+' 맞음';
+     $('.next',sec).addEventListener('click',function(){ show(cur+1); if(cur===4)result(); });
+     focusLater('.scene.on .next',300);
+   });
+   sync();
+ }
+
+ classify($('#s1'),EX.ex1); classify($('#s3'),EX.ex3);
+
+ // ── 선택 장면 (ex2)
+ (function(){
+   var sec=$('#s2'), spec=EX.ex2, answered=0, ok=0;
+   spec.qs.forEach(function(q,qi){
+     var box=$('.qbox[data-q="'+qi+'"]',sec);
+     $$('.opt',box).forEach(function(b){ b.addEventListener('click',function(){
+       if(box.classList.contains('done'))return; var k=+b.dataset.k, right=(k===q[2]); if(right)ok++; answered++;
+       $$('.opt',box).forEach(function(o,j){o.classList.toggle('ok',j===q[2]);o.classList.toggle('ng',j===k&&!right);o.classList.toggle('dim',j!==q[2]&&j!==k);o.disabled=true;});
+       box.classList.add('done');
+       var nb=$('.qbox[data-q="'+(qi+1)+'"]',sec); if(nb){nb.style.display='block'; nb.style.animationDelay='0ms'; nb.style.opacity='1'; nb.style.transform='none';
+         if(ft)clearTimeout(ft); ft=setTimeout(function(){var el=nb.querySelector('.opt'); if(el&&el.closest('.scene.on')){el.focus(); el.scrollIntoView({block:'nearest',behavior:nomo()?'auto':'smooth'});}},60);}
+       if(answered===spec.qs.length){
+         score.ok+=ok; score.total+=spec.qs.length; log.push({t:spec.title,ok:ok,n:spec.qs.length});
+         $('.fb',sec).innerHTML='<span class="tag'+(ok===spec.qs.length?'':' ng')+'">'+ok+' / '+spec.qs.length+' 맞음</span><div class="ex">'+spec.expl+'</div><div class="bs">근거 · '+spec.basis+'</div><button class="next" type="button">다음 →</button>';
+         sec.classList.add('show'); $('.next',sec).addEventListener('click',function(){show(3);});
+       }
+     });});
+   });
+ })();
+
+ function result(){
+   var sec=$('#s4');
+   $('.sr',sec).textContent=score.total+'개 중 '+score.ok+'개 맞음'; $('#live').textContent='결과 — '+score.total+'개 중 '+score.ok+'개 맞음';
+   $('.recap',sec).innerHTML=log.map(function(l,j){return '<div style="animation-delay:'+(300+j*110)+'ms"><b>'+l.ok+'/'+l.n+'</b><span>'+l.t+'</span></div>';}).join('');
+   setTimeout(function(){ $('.pr',sec).style.strokeDashoffset=440-440*score.ok/score.total; var n=0,el=$('.ring .n span',sec),
+     t=setInterval(function(){el.textContent=n; if(n>=score.ok)clearInterval(t); n++;}, nomo()?0:120); $('.ring small',sec).textContent='/ '+score.total+' 맞음';},200);
+ }
+ $('#s0 .go').addEventListener('click',function(){show(1);});
+ $('.again').addEventListener('click',function(){location.reload();});
+ document.addEventListener('keydown',function(e){
+   if(cur!==2)return; var box=$$('.qbox',$('#s2')).filter(function(b){return b.style.display!=='none'&&!b.classList.contains('done')})[0];
+   if(box&&/^[1-4]$/.test(e.key)){var b=$('.opt[data-k="'+(+e.key-1)+'"]',box); if(b)b.click();}
+ });
+ show(0);
+})();
+</script></body></html>

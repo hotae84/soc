@@ -1,0 +1,1333 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 실습(운영 판단) · 5장 보안장비와 보호조치는 어디서 무엇을 하는가</title>
+<style>
+:root{--acc:#147D7A;--acclt:#1DB6B2;--acclt2:#74E9E5;--deep:#0E5A58;--pale:#DDF0EF;--bg:#0A1817;--red:#E63329;
+      --ink:#FFFFFF;--mut:rgba(255,255,255,.82);--dim:rgba(255,255,255,.66);
+      --line:rgba(255,255,255,.22);--panel:rgba(255,255,255,.055)}
+*{box-sizing:border-box}
+@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth}}
+html.nomo{scroll-behavior:auto}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Pretendard","Pretendard Variable","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  font-size:16px;line-height:1.62;-webkit-text-size-adjust:100%;overflow-x:hidden}
+svg.sprite{display:none}
+.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.13em}
+
+/* ---------- 고정 장치 ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);z-index:60}
+.topbar i{display:block;height:100%;width:0;background:var(--acc)}
+.rail{position:fixed;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:55}
+.rail button{width:11px;height:11px;padding:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.38);background:transparent;cursor:pointer}
+.rail button.on{background:var(--acc);border-color:var(--acc);transform:scale(1.3)}
+.rail button:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.motionbtn{position:fixed;left:18px;bottom:18px;z-index:55;border:1.5px solid var(--line);background:rgba(0,0,0,.42);
+  color:var(--mut);border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer}
+.motionbtn:hover{color:#fff;border-color:var(--acclt)}
+@media(max-width:820px){.rail{display:none}}
+
+/* ---------- 장면 ---------- */
+.scene{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+  padding:88px clamp(18px,5vw,56px);overflow:hidden}
+.scene+.scene{border-top:1px solid rgba(255,255,255,.07)}
+.scene.alt{background:rgba(255,255,255,.03)}
+.scene>.inner{width:100%;max-width:1060px;margin:0 auto;position:relative;z-index:2}
+.bignum{position:absolute;right:3%;top:5%;z-index:1;pointer-events:none;user-select:none;
+  font-size:clamp(88px,20vw,240px);font-weight:800;line-height:.9;color:rgba(255,255,255,.045)}
+.kicker{font-size:11.5px;letter-spacing:.11em;font-weight:700;color:var(--mut);margin:0 0 12px}
+.accent{width:48px;height:4px;background:var(--red);margin:0 0 18px}
+h1{font-size:clamp(30px,6.2vw,58px);line-height:1.16;margin:0 0 18px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(22px,3.6vw,34px);line-height:1.25;margin:0 0 10px;font-weight:800;letter-spacing:-.015em}
+.lead{font-size:clamp(15px,1.9vw,18.5px);color:var(--mut);margin:0 0 6px;max-width:62ch}
+.step{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.06em;
+  color:var(--acclt);border:1.5px solid var(--acclt);border-radius:20px;padding:4px 14px;margin:0 0 16px}
+.hint{color:var(--mut);font-size:14.5px;margin:10px 0 20px;max-width:70ch}
+.down{margin-top:34px;display:inline-flex;align-items:center;gap:9px;color:var(--mut);font-size:13px;font-weight:700}
+.down i{display:block;width:1px;height:34px;background:linear-gradient(var(--acc),transparent);animation:sink 1.9s ease-in-out infinite}
+@keyframes sink{0%,100%{opacity:.3;transform:translateY(-5px)}50%{opacity:1;transform:translateY(5px)}}
+.metas{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
+.meta{border:1px solid var(--line);border-radius:16px;padding:4px 13px;font-size:12px;font-weight:700;color:var(--mut)}
+
+/* 표지 기하 도형 */
+.geo{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.geo i{position:absolute;display:block;border:1.5px solid rgba(255,255,255,.11);border-radius:50%}
+.geo i.sq{border-radius:10px}
+.geo i.fl{background:var(--deep);border-color:transparent;opacity:.6}
+.geo i.ac{border-color:var(--acc);opacity:.5}
+@keyframes drift{0%,100%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(0,-30px,0) rotate(6deg)}}
+
+/* ---------- 등장 ---------- */
+.rv{opacity:0;transform:translateY(28px);
+  transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.scene.in .rv{opacity:1;transform:none}
+.stage svg path.dr{stroke-dasharray:var(--L,600);stroke-dashoffset:var(--L,600);transition:stroke-dashoffset 1.15s ease .25s}
+.scene.in .stage svg path.dr{stroke-dashoffset:0}
+.stage svg g.node{opacity:0;transition:opacity .55s ease;transition-delay:var(--d,0s)}
+.scene.in .stage svg g.node{opacity:1}
+
+/* ---------- 무대(SVG) ---------- */
+.stage{margin:8px 0 18px;border:1px solid var(--line);border-radius:16px;background:rgba(0,0,0,.22);padding:10px}
+.stage svg{display:block;width:100%;height:auto}
+.zone{fill:rgba(255,255,255,.035);stroke:var(--line);stroke-dasharray:5 5}
+.zlabel{fill:var(--dim);font-size:12px;font-weight:700}
+.link{stroke:rgba(255,255,255,.3);stroke-width:2;fill:none}
+.link.dash{stroke-dasharray:7 6;stroke:var(--acc);opacity:.75}
+.nodec{fill:var(--deep);stroke:var(--acc);stroke-width:2}
+.nodet{fill:var(--ink);font-size:13.5px;font-weight:700;text-anchor:middle}
+.nodesub{fill:var(--dim);font-size:11.5px;text-anchor:middle}
+.dot{fill:var(--acc);stroke:#fff;stroke-width:2}
+.stage .cap{fill:var(--dim);font-size:11.5px}
+
+/* ---------- 카드 ---------- */
+.bank{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 16px;min-height:52px;padding:11px;
+  border:1.5px dashed var(--line);border-radius:14px;background:rgba(0,0,0,.18)}
+.bank:empty::after{content:"카드를 모두 놓았습니다";color:var(--dim);font-size:13px}
+.card{display:inline-flex;align-items:center;gap:7px;border:1.5px solid rgba(255,255,255,.34);border-radius:22px;
+  padding:8px 16px;background:rgba(255,255,255,.07);color:var(--ink);font-weight:700;font-size:14.5px;
+  font-family:inherit;cursor:pointer;transition:transform .2s,background .2s,border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--acclt);background:rgba(255,255,255,.12)}
+.card.sel{background:var(--deep);border-color:var(--acclt);box-shadow:0 6px 22px rgba(0,0,0,.42);transform:translateY(-2px)}
+.card.flying{transition:transform .42s cubic-bezier(.2,.8,.25,1)}
+.card:focus-visible,.dropbtn:focus-visible,.gap:focus-visible,.runbtn:focus-visible,.main:focus-visible,.ghost:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.card .ic{opacity:.85}
+.card.used{opacity:.34}
+body.graded .card{cursor:default}
+
+/* ---------- 놓는 자리 ---------- */
+.wins{display:grid;gap:14px;margin:0 0 16px}
+.wins.c2{grid-template-columns:repeat(2,1fr)}
+.wins.c3{grid-template-columns:repeat(3,1fr)}
+.wins.c4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:860px){.wins.c3,.wins.c4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.wins.c2,.wins.c3,.wins.c4{grid-template-columns:1fr}}
+.win{border:1.5px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:13px;
+  display:flex;flex-direction:column;gap:9px;min-height:132px;transition:border-color .2s,background .2s}
+.win.armed{border-color:var(--acclt);background:rgba(255,255,255,.07)}
+.win .dropbtn{display:block;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;padding:0;cursor:pointer}
+.win h3{margin:0;font-size:14.5px;font-weight:800}
+.win .sub{margin:2px 0 0;font-size:12px;color:var(--dim);line-height:1.45}
+.win .hold{display:flex;flex-wrap:wrap;gap:7px;min-height:34px;align-content:flex-start}
+.win .hold:empty::after{content:"비어 있음";color:var(--dim);font-size:12.5px}
+.win .hold .card{font-size:13.5px;padding:6px 13px}
+
+/* ---------- 문장 빈칸 ---------- */
+.sent{font-size:clamp(16px,2.2vw,20px);line-height:2.5;margin:0 0 14px;font-weight:600}
+.gap{display:inline-flex;align-items:center;justify-content:center;min-width:132px;min-height:40px;
+  border:2px dashed var(--acclt);border-radius:10px;padding:2px 13px;margin:0 4px;vertical-align:middle;
+  background:rgba(255,255,255,.06);color:var(--ink);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.gap.filled{border-style:solid;background:var(--deep)}
+.gap.empty{color:var(--dim)}
+.gap.ok{border-color:#7BD88F}
+.gap.no{border-color:#FFB4A2}
+
+/* ---------- 흐름 실행 ---------- */
+.runrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.runrow .lbl{font-size:13px;font-weight:800;color:var(--mut);letter-spacing:.04em}
+.runbtn{border:1.5px solid var(--acclt);background:transparent;color:var(--ink);border-radius:22px;
+  padding:9px 18px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
+.runbtn:hover{background:rgba(255,255,255,.1)}
+.runbtn[disabled]{opacity:.42;cursor:default}
+.runbtn.on{background:var(--deep);border-color:var(--acclt)}
+.log{border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.26);padding:6px 4px;margin:0 0 6px;min-height:56px}
+.log .empty{display:block;padding:12px 14px;color:var(--dim);font-size:13.5px}
+.log .li{display:flex;gap:11px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07);
+  font-size:14.5px;opacity:0;transform:translateX(-10px);animation:slidein .45s forwards}
+.log .li:last-child{border-bottom:0}
+@keyframes slidein{to{opacity:1;transform:none}}
+.log .tag{flex:0 0 auto;min-width:66px;text-align:center;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:800;align-self:flex-start}
+.t-pass{background:rgba(123,216,143,.16);color:#9BE3AC;border:1px solid rgba(123,216,143,.4)}
+.t-stop{background:rgba(255,180,162,.14);color:#FFC2B2;border:1px solid rgba(255,180,162,.4)}
+.t-odd{background:rgba(255,214,120,.14);color:#FFDE95;border:1px solid rgba(255,214,120,.42)}
+.t-alert{background:rgba(160,196,255,.14);color:#B7D0FF;border:1px solid rgba(160,196,255,.42)}
+.t-hold{background:rgba(255,255,255,.1);color:#E6E6E6;border:1px solid rgba(255,255,255,.3)}
+.log .tx{color:var(--mut);line-height:1.55}
+
+/* ---------- 처리 여력 ---------- */
+.gauge{margin:0 0 14px}
+.gauge .bar{height:16px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden;border:1px solid var(--line)}
+.gauge .bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .5s ease}
+.gauge.over .bar i{background:#FFB4A2}
+.gauge .cap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--dim);margin-top:6px;font-weight:700}
+
+/* ---------- 흐르는 기록 ---------- */
+.stream{position:relative;height:196px;overflow:hidden;border:1px solid var(--line);border-radius:14px;
+  background:rgba(0,0,0,.28);margin:0 0 14px}
+.stream .roll{position:absolute;left:0;right:0;top:0;animation:roll 18s linear infinite}
+.stream.hold .roll{animation-play-state:paused}
+@keyframes roll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.stream .row{display:grid;grid-template-columns:136px 1fr 112px 92px;gap:10px;padding:9px 15px;
+  font-size:13.5px;color:var(--mut);border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}
+.stream .row.blank span{display:block;height:9px;border-radius:5px;background:rgba(255,255,255,.14)}
+.stream .row.blank span:nth-child(2){background:rgba(255,255,255,.10)}
+.stream .row.blank span:nth-child(3){width:64%;background:rgba(255,255,255,.09)}
+.stream .row.blank span:nth-child(4){width:48%;background:rgba(255,255,255,.09)}
+.stream .row.pick{color:var(--ink);background:rgba(255,255,255,.1);font-weight:700;box-shadow:inset 3px 0 0 var(--acc)}
+@media(max-width:620px){.stream .row{grid-template-columns:106px 1fr;gap:14px;font-size:12.5px}.stream .row span:nth-child(n+3){display:none}}
+.picked{display:none;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px;margin:0 0 16px}
+.picked .cell{border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.05);padding:9px 12px}
+.picked .cell .k{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.04em}
+.picked .cell .v{font-size:14.5px;font-weight:800;margin-top:2px}
+
+/* ---------- 선택 문항 ---------- */
+.qs{border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:15px 17px;margin:0 0 14px}
+.qs .qq{font-size:15.5px;font-weight:700;margin:0 0 11px}
+.opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid var(--line);border-radius:11px;
+  margin:0 0 7px;cursor:pointer;font-size:14.5px;transition:border-color .18s,background .18s}
+.opt:hover{border-color:var(--acclt)}
+.opt:focus-within{outline:3px solid var(--acc);outline-offset:2px}
+.opt input{accent-color:var(--acc);width:17px;height:17px;flex:0 0 auto}
+.opt.is-answer{border-color:#7BD88F;background:rgba(123,216,143,.1)}
+.opt.is-chosen{font-weight:800}
+
+/* ---------- 채점 ---------- */
+.ctx{border-left:3px solid var(--acclt);background:rgba(255,255,255,.05);border-radius:0 11px 11px 0;
+  padding:12px 16px;margin:0 0 16px;font-size:14.5px}
+.ctx p{margin:4px 0;color:var(--mut)}
+.ctx b{color:var(--ink)}
+.expl{display:none;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.05);padding:15px 18px;margin:14px 0 0}
+.scene.graded .expl{display:block}
+.expl .ttl{font-size:12px;font-weight:800;letter-spacing:.07em;color:var(--acclt);margin:0 0 7px}
+.expl p{margin:0 0 9px;font-size:14.5px;color:var(--mut);line-height:1.65}
+.expl .basis{font-size:12px;color:var(--dim);margin:0}
+.rows{margin:10px 0 0}
+.rows:not(:empty){border-top:1px solid rgba(255,255,255,.1)}
+.rows .r{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13.5px;align-items:flex-start}
+.rows .r .m{flex:0 0 auto;width:20px;font-weight:800}
+.rows .r.g .m{color:#9BE3AC}
+.rows .r.b .m{color:#FFC2B2}
+.rows .r .t{color:var(--mut)}
+.rows .r .t b{color:var(--ink)}
+.disc{font-size:12.5px;color:var(--dim);margin:0 0 16px;border-left:2px solid var(--line);padding-left:10px}
+.gradebar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:26px 0 0}
+.main{border:2px solid var(--acclt);background:var(--deep);color:#fff;border-radius:26px;padding:14px 32px;font:inherit;font-size:16px;font-weight:800;cursor:pointer;
+  box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.main:hover{filter:brightness(1.1)}
+.ghost{border:1.5px solid var(--line);background:transparent;color:var(--mut);border-radius:24px;padding:11px 22px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.ghost:hover{color:#fff;border-color:var(--acclt)}
+.score{font-size:clamp(26px,5vw,46px);font-weight:800;margin:0 0 10px}
+.score small{display:block;font-size:15px;font-weight:600;color:var(--mut);margin-top:8px}
+nav.end{display:flex;gap:16px;flex-wrap:wrap;margin:28px 0 0}
+nav.end a{color:var(--acclt);font-weight:700;font-size:14.5px;text-decoration:none;border-bottom:1px solid transparent}
+nav.end a:hover{border-bottom-color:var(--acclt)}
+nav.end .dimx{color:var(--dim);font-size:14.5px}
+footer{padding:30px 24px 60px;text-align:center;color:var(--dim);font-size:12.5px}
+
+/* ---------- 움직임 줄이기 ---------- */
+body.nomo *,body.nomo *::before,body.nomo *::after{animation:none!important;transition:none!important}
+body.nomo .rv{opacity:1;transform:none}
+body.nomo .stage svg path.dr{stroke-dashoffset:0}
+body.nomo .stage svg g.node{opacity:1}
+body.nomo .log .li{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+  .stage svg path.dr{stroke-dashoffset:0}
+  .stage svg g.node{opacity:1}
+  .log .li{opacity:1;transform:none}
+}
+/* ---------- 인쇄 ---------- */
+@media print{
+  body{background:#fff;color:#000}
+  .topbar,.rail,.motionbtn,.down,.bignum,.geo,.gradebar{display:none!important}
+  .scene{min-height:0;padding:14px 0;page-break-inside:avoid;border-top:1px solid #ccc}
+  .rv{opacity:1;transform:none}
+  h1,h2,.score{color:#000}
+  .lead,.hint,.ctx p,.expl p,.rows .r .t,.gauge .cap,.picked .cell .k{color:#333}
+  .stage,.log,.win,.qs,.bank,.expl,.stream,.picked .cell{background:#fff;border-color:#999}
+  .card,.gap{background:#fff;color:#000;border-color:#666}
+  .expl{display:block}
+  .stream{height:auto;overflow:visible}.stream .roll{position:static;animation:none}
+  .nodec{fill:#fff;stroke:#333}.nodet{fill:#000}.nodesub{fill:#555}.link{stroke:#777}.zone{fill:#f4f4f4;stroke:#bbb}.zlabel{fill:#666}
+}
+
+/* 자리 스타일은 game_art.CSS_ART 에 있다 — 장비 그림 내부 도형을 덮지 않도록 .pad 로 한정 */
+
+/* ---------- 자리 버튼 줄 ---------- */
+.kbrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.kbrow .lbl{font-size:13px;font-weight:800;color:var(--mut);letter-spacing:.04em}
+.pbtn{border:1.5px solid var(--line);background:rgba(255,255,255,.05);color:var(--ink);border-radius:12px;
+  padding:8px 13px;font:inherit;font-size:13.5px;font-weight:700;cursor:pointer;display:inline-flex;gap:8px;align-items:center}
+.pbtn:hover{border-color:var(--acclt)}
+.pbtn:focus-visible{outline:3px solid var(--acclt);outline-offset:3px}
+.pbtn .pv{font-weight:600;color:var(--acclt);font-size:12.5px}
+.pbtn .pv.none{color:var(--dim)}
+.kbrow .note{font-size:12.5px;color:var(--dim)}
+
+/* ---------- 허용 범위 토글 ---------- */
+.toggles{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 14px;
+  border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:13px 15px}
+.tg{display:inline-flex;align-items:center;gap:9px;font-size:14.5px;font-weight:700;cursor:pointer;
+  border:1.5px solid var(--line);border-radius:22px;padding:8px 15px}
+.tg:has(input:checked){border-color:var(--acclt);background:rgba(255,255,255,.07)}
+.tg:focus-within{outline:3px solid var(--acclt);outline-offset:2px}
+.tg input{accent-color:var(--acc);width:17px;height:17px}
+.toggles .note{font-size:12.5px;color:var(--dim);flex:1;min-width:200px}
+
+/* ---------- 자리 확인 관문 ---------- */
+.gate{border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:14px 16px;margin:0 0 14px}
+.gate .grow{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.gate .msg{font-size:14px;color:var(--mut);flex:1;min-width:220px}
+.gate.pass{border-color:#7BD88F}
+.gate.pass .msg{color:#9BE3AC;font-weight:700}
+.gate ul{margin:11px 0 0;padding:0 0 0 18px}
+.gate li{font-size:13.5px;color:var(--mut);margin:5px 0;line-height:1.55}
+.gate li b{color:var(--ink)}
+
+/* ---------- 확인 목록 ---------- */
+.checks{border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:6px 4px;margin:0 0 14px}
+.checks .empty{display:block;padding:12px 15px;color:var(--dim);font-size:13.5px}
+.checks .ck{display:flex;gap:11px;padding:11px 15px;border-bottom:1px solid rgba(255,255,255,.07);
+  align-items:flex-start;flex-wrap:wrap}
+.checks .ck:last-child{border-bottom:0}
+.checks .ck .what{flex:1;min-width:200px;font-size:14px;color:var(--mut);line-height:1.55}
+.checks .ck .what b{color:var(--ink)}
+.checks .ck .acts{display:flex;gap:7px;flex-wrap:wrap}
+.ckbtn{border:1.5px solid var(--line);background:transparent;color:var(--mut);border-radius:18px;
+  padding:6px 13px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap}
+.ckbtn:hover{color:#fff;border-color:var(--acclt)}
+.ckbtn:focus-visible{outline:3px solid var(--acclt);outline-offset:2px}
+.ckbtn.on{background:rgba(123,216,143,.16);border-color:#7BD88F;color:#9BE3AC}
+.ckbtn.warn{background:rgba(255,214,120,.14);border-color:#FFD678;color:#FFDE95}
+.checks .ck .fix{flex-basis:100%;font-size:13px;color:#FFDE95;margin:2px 0 0;display:none}
+.checks .ck.mis .fix{display:block}
+
+/* ---------- 상태등 ---------- */
+.lamps{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin:0 0 14px}
+@media(max-width:720px){.lamps{grid-template-columns:1fr}}
+.lamp{border:1.5px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:14px 15px}
+.lamp .dot{width:13px;height:13px;border-radius:50%;background:rgba(255,255,255,.2);display:inline-block;margin-right:8px;
+  vertical-align:-1px;transition:background .3s,box-shadow .3s}
+.lamp.on{border-color:#7BD88F}
+.lamp.on .dot{background:#7BD88F;box-shadow:0 0 14px rgba(123,216,143,.6)}
+.lamp h4{margin:0 0 5px;font-size:14.5px;font-weight:800}
+.lamp p{margin:0;font-size:12.5px;color:var(--dim);line-height:1.5}
+.lamp.on p{color:var(--mut)}
+.runsleft{font-size:13px;color:var(--dim);font-weight:700;margin:0 0 14px}
+.runsleft b{color:var(--acclt)}
+.t-check{background:rgba(160,196,255,.14);color:#B7D0FF;border:1px solid rgba(160,196,255,.42)}
+
+/* 놓은 카드는 글자를 흐리게 하지 않고 테두리와 꼬리말로 알린다 */
+.card.used{opacity:1;background:transparent;border-style:dashed;border-color:var(--line)}
+.card.used::after{content:"놓음";font-size:11.5px;font-weight:800;color:var(--acclt);margin-left:3px}
+
+/* 관문이 잠겨 있는 동안 시나리오 버튼이 오래 흐려져 있으므로 읽을 수 있게 둔다 */
+.runbtn[disabled]{opacity:.62}
+
+/* 상태등·확인 선택을 색만이 아니라 글자로도 알린다 */
+.lamp .state{display:inline-block;font-size:11.5px;font-weight:800;border-radius:11px;
+  padding:2px 9px;margin-left:7px;border:1px solid var(--line);color:var(--dim);vertical-align:1px}
+.lamp.on .state{border-color:#7BD88F;color:#9BE3AC}
+.lamp.miss .state{border-color:#FFB4A2;color:#FFC2B2}
+.lamp.miss{border-color:rgba(255,180,162,.5)}
+.gate.hold{border-color:#FFD678}
+.gate.hold .msg{color:#FFDE95;font-weight:700}
+
+/* ---------- 장비 그림 공통 ---------- */
+.eq{--on:#9BE3AC;--warn:#FFC2B2;--note:#B7D0FF}
+.eq-base{fill:var(--deep);stroke:var(--acclt);stroke-width:2;stroke-linejoin:round}
+.eq-face{fill:rgba(255,255,255,.10)}
+.eq-dark{fill:rgba(0,0,0,.42)}
+.eq-edge{stroke:var(--acclt);stroke-width:2;fill:none;stroke-linecap:round}
+.eq-thin{stroke:rgba(255,255,255,.34);stroke-width:1.4;fill:none}
+.eq-bar{fill:var(--acclt)}
+.eq-glass{fill:rgba(255,255,255,.14)}
+.eq-ground{fill:rgba(0,0,0,.34)}
+.eq-lbl{fill:var(--ink);font-size:13px;font-weight:800;text-anchor:middle}
+.eq-sub{fill:var(--dim);font-size:11px;text-anchor:middle}
+
+/* 문 — 방화벽 */
+.eq-fw .door{transition:transform .5s cubic-bezier(.2,.8,.25,1)}
+.eq-fw.open .door-l{transform:translateX(-21px)}
+.eq-fw.open .door-r{transform:translateX(21px)}
+.eq-fw.shut .door-l,.eq-fw.shut .door-r{transform:none}
+.eq-fw.shut .lintel{stroke:var(--warn)}
+.eq-fw.flag .lintel{stroke:var(--note)}
+
+/* 차단봉 — IPS */
+.eq-ips .boom{transition:transform .55s cubic-bezier(.2,.8,.25,1);
+  transform-box:view-box;transform-origin:24px 38px}
+.eq-ips.lift .boom{transform:rotate(-62deg)}
+
+/* 검사대 — WAF */
+.eq-waf .scan{opacity:0}
+.eq-waf.scanning .scan{opacity:1;animation:scanmove 1.1s ease-in-out infinite}
+@keyframes scanmove{0%,100%{transform:translateY(0)}50%{transform:translateY(26px)}}
+.eq-waf .shutter{transform:translateY(-38px);transition:transform .45s cubic-bezier(.2,.8,.25,1)}
+.eq-waf.block .shutter{transform:none}
+.eq-waf.block .gantry{stroke:var(--warn)}
+
+/* 관측 초소 — IDS */
+.eq-ids .ping{fill:none;stroke:var(--note);stroke-width:2;opacity:0}
+.eq-ids.ping-on .ping{animation:ping 1.5s ease-out 2}
+.eq-ids.ping-on .dish{fill:var(--note)}
+@keyframes ping{0%{r:6;opacity:.9}100%{r:30;opacity:0}}
+
+/* 단말 보호 */
+.eq-ep .badge{fill:var(--deep);stroke:var(--acclt);stroke-width:2}
+.eq-ep.ping-on .badge{stroke:var(--note);animation:beat .7s ease-in-out 3}
+@keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.16)}}
+.eq-ep .badge{transform-box:fill-box;transform-origin:center}
+
+/* 기록 캐비닛 */
+.eq-log .sheet{transform:translateX(-30px);opacity:0;transition:transform .5s ease,opacity .5s ease}
+.eq-log.filed .sheet{transform:none;opacity:1}
+
+/* 자리(설치 패드) */
+.pad{fill:rgba(255,255,255,.045);stroke:var(--acclt);stroke-width:1.8;stroke-dasharray:7 6}
+.dslot.filled .pad{stroke-dasharray:none;fill:rgba(255,255,255,.07)}
+.dslot.ok .pad{stroke:#7BD88F;stroke-width:2.4}
+.dslot.no .pad{stroke:#FFB4A2;stroke-width:2.4}
+.dslot .crate{opacity:0;transition:opacity .3s}
+.dslot.filled .crate{opacity:1}
+.dslot .eq{opacity:0;transition:opacity .45s}
+.dslot.live .crate{opacity:0}
+.dslot.live .eq{opacity:1}
+.dslot text.ph{fill:var(--dim);font-size:12px;text-anchor:middle}
+.dslot.filled text.ph{display:none}
+.dslot text.val{fill:var(--ink);font-size:12.5px;font-weight:800;text-anchor:middle}
+.dslot:not(.filled) text.val{display:none}
+.dslot.live text.val{fill:var(--acclt)}
+
+/* 보드 바탕 */
+.lane{fill:rgba(255,255,255,.05);stroke:rgba(255,255,255,.14);stroke-width:1.5}
+.lane-mid{stroke:rgba(255,255,255,.16);stroke-width:1.6;stroke-dasharray:10 12;fill:none}
+.zonep{fill:rgba(255,255,255,.035);stroke:var(--line);stroke-width:1.4;stroke-dasharray:6 6}
+.zonetag{fill:var(--dim);font-size:11.5px;font-weight:800}
+.sight{stroke:var(--acclt);stroke-width:1.6;stroke-dasharray:5 6;fill:none;opacity:.6}
+.feed{stroke:rgba(255,255,255,.26);stroke-width:1.4;stroke-dasharray:4 6;fill:none}
+.nodet{fill:var(--ink);font-size:13px;font-weight:700;text-anchor:middle}
+.nodesub{fill:var(--dim);font-size:11px;text-anchor:middle}
+
+/* 요청 꾸러미와 잔상 */
+.pk{fill:var(--acclt);stroke:#fff;stroke-width:2}
+.pk-halo{fill:var(--acclt);opacity:.25}
+.trail{fill:var(--acclt);opacity:.34;pointer-events:none}
+.pulse{fill:none;stroke:var(--acclt);stroke-width:2.5;pointer-events:none}
+
+/* ---------- 게임 카드 ---------- */
+.deck{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:0 0 18px}
+@media(max-width:980px){.deck{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.deck{grid-template-columns:repeat(2,1fr)}}
+.card.gcard{display:flex;flex-direction:column;align-items:stretch;gap:0;text-align:left;
+  border:1.5px solid var(--line);border-radius:14px;padding:0;overflow:hidden;
+  background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.03));
+  transition:transform .18s cubic-bezier(.2,.8,.25,1),border-color .18s,box-shadow .18s}
+.card.gcard:hover{transform:translateY(-4px);border-color:var(--acclt);box-shadow:0 12px 28px rgba(0,0,0,.45)}
+.card.gcard.sel{transform:translateY(-6px);border-color:var(--acclt);background:var(--deep);
+  box-shadow:0 0 0 2px var(--acclt),0 16px 34px rgba(0,0,0,.5)}
+.card.gcard .art{display:block;background:rgba(0,0,0,.28);border-bottom:1px solid var(--line);padding:10px 8px 6px}
+.card.gcard .art svg{display:block;width:100%;height:auto}
+.card.gcard .eq-waf .shutter,.card.gcard .eq-waf .scan{display:none}  /* 카드에는 정지 상태만 */
+.card.gcard .eq-log .sheet{opacity:.5;transform:none}
+.card.gcard .nm{display:block;font-size:14.5px;font-weight:800;padding:9px 11px 0}
+.card.gcard .ro{display:block;font-size:12px;color:var(--mut);padding:3px 11px 0;line-height:1.45}
+.card.gcard .li{display:block;font-size:11.5px;color:var(--dim);padding:5px 11px 11px;line-height:1.45}
+/* 고른 카드는 바탕이 딥 색이라 보조 글자색으로는 대비가 모자란다 */
+.card.gcard.sel .li{color:var(--mut)}
+.card.gcard .li::before{content:"한계 · ";color:var(--acclt2);font-weight:800}
+.card.gcard.used{position:relative;background:transparent;border-style:dashed}
+.card.gcard.used::after{content:"놓음";position:absolute;top:8px;right:8px;
+  background:var(--deep);border:1px solid var(--acclt);color:#fff;
+  font-size:11px;font-weight:800;border-radius:10px;padding:2px 8px;margin:0}
+.card.gcard.used .art{opacity:.55}
+
+/* ---------- 상단 고정 HUD ---------- */
+body{padding-top:54px}
+.hud{position:fixed;top:3px;left:0;right:0;z-index:58;display:flex;gap:10px;align-items:center;
+  flex-wrap:wrap;padding:8px clamp(12px,3vw,26px);
+  background:rgba(0,0,0,.62);border-bottom:1px solid var(--line);backdrop-filter:blur(9px)}
+.hud .h-title{font-size:11.5px;font-weight:800;letter-spacing:.09em;color:var(--dim)}
+.h-lamp{display:inline-flex;align-items:center;gap:7px;border:1.5px solid var(--line);
+  border-radius:18px;padding:5px 12px;font-size:12.5px;font-weight:700;color:var(--mut)}
+.h-lamp i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.24);
+  transition:background .3s,box-shadow .3s}
+.h-lamp b{font-weight:800;color:var(--dim)}
+.h-lamp.on{border-color:#7BD88F;color:var(--ink)}
+.h-lamp.on i{background:#7BD88F;box-shadow:0 0 12px rgba(123,216,143,.65)}
+.h-lamp.on b{color:#9BE3AC}
+.h-lamp.miss{border-color:rgba(255,180,162,.6)}
+.h-lamp.miss i{background:#FFB4A2}
+.h-lamp.miss b{color:#FFC2B2}
+.hud .h-run{margin-left:auto;font-size:12.5px;font-weight:800;color:var(--mut)}
+.hud .h-run b{color:var(--acclt)}
+@media(max-width:700px){
+  body{padding-top:92px}
+  .hud .h-title{width:100%}
+  .hud .h-run{margin-left:0}
+}
+@media print{.hud{display:none}body{padding-top:0}}
+
+/* ---------- 알림 배지 ---------- */
+.toasts{position:fixed;right:18px;bottom:18px;z-index:57;display:flex;flex-direction:column;
+  gap:9px;max-width:min(340px,86vw);pointer-events:none}
+.toast{border:1.5px solid rgba(160,196,255,.5);background:rgba(0,0,0,.78);border-radius:13px;
+  padding:11px 14px;font-size:13.5px;color:var(--ink);backdrop-filter:blur(8px);
+  box-shadow:0 10px 26px rgba(0,0,0,.5);animation:tin .35s cubic-bezier(.2,.8,.25,1)}
+.toast b{display:block;font-size:11.5px;font-weight:800;color:#B7D0FF;letter-spacing:.06em;margin-bottom:3px}
+.toast.out{animation:tout .35s forwards}
+@keyframes tin{from{opacity:0;transform:translateX(26px)}to{opacity:1;transform:none}}
+@keyframes tout{to{opacity:0;transform:translateX(26px)}}
+@media print{.toasts{display:none}}
+</style>
+</head>
+<body>
+<div class="topbar" aria-hidden="true"><i></i></div>
+<div class="hud" role="status" aria-live="polite" aria-label="운영 상태"><span class="h-title">운영 상태</span><span class="h-lamp" id="h-svc"><i></i>서비스 <b>확인 중</b></span><span class="h-lamp" id="h-narrow"><i></i>접점 <b>확인 중</b></span><span class="h-lamp" id="h-alert"><i></i>알림 <b>확인 중</b></span><span class="h-run">보낸 통신 <b id="h-run">0 / 4</b></span></div><div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+<div class="rail" role="navigation" aria-label="장면 이동"><button type="button" aria-label="1번째 장면으로"></button><button type="button" aria-label="2번째 장면으로"></button><button type="button" aria-label="3번째 장면으로"></button><button type="button" aria-label="4번째 장면으로"></button><button type="button" aria-label="5번째 장면으로"></button></div>
+<button type="button" class="motionbtn" aria-pressed="false">움직임 끄기</button>
+<section class="scene" id="sc-cover"><div class="geo" aria-hidden="true"><i style="width:340px;height:340px;left:-70px;top:8%;animation:drift 13s ease-in-out infinite"></i><i class="ac" style="width:190px;height:190px;right:12%;top:14%;animation:drift 17s ease-in-out infinite .6s"></i><i class="sq fl" style="width:230px;height:230px;right:-50px;bottom:6%;animation:drift 15s ease-in-out infinite 1.2s"></i><i class="sq" style="width:120px;height:120px;left:26%;bottom:12%;animation:drift 11s ease-in-out infinite .3s"></i><i class="ac" style="width:64px;height:64px;left:52%;top:22%;animation:drift 9s ease-in-out infinite .9s"></i></div><div class="inner"><p class="kicker rv">SOC 2026 · 보안관제 입문 · 실습 · 1일-⑤</p><div class="accent rv"></div><h1 class="rv">보안장비와 보호조치는 어디서 무엇을 하는가</h1><p class="lead rv">여섯 자리를 정하고 허용 범위를 고른 뒤, 앞 장에서 본 네 장면을 흘려보냅니다. 막은 수로 이기지 않습니다. 운영이 성립하는지로 봅니다.</p><div class="metas rv"><span class="meta">3개 장면</span><span class="meta">강의 문안 기반</span><span class="meta">저장 없음</span><span class="meta">운영 판단형</span></div><p class="down rv"><i></i>아래로 내려가며 하나씩 해 보세요</p></div></section>
+<section class="scene" id="sc04-1" data-ex="a"><div class="bignum" aria-hidden="true">01</div><div class="inner"><span class="step rv">장면 1</span><h2 class="rv">작전실 — 자리를 정하고 통신을 흘려보낸다</h2><p class="hint rv">카드 여섯 장을 판의 빈 자리에 놓으세요. 자리 확인을 통과하면 설비가 자리를 잡고 판이 움직이기 시작합니다. IDS는 길 밖, IPS는 길 위입니다. 그다음 허용 범위를 정하고 앞 장에서 본 네 장면을 하나씩 보냅니다.</p><p class="disc rv">교육용 단순 구성 · 실제 기관의 설계도가 아님</p><div class="deck rv" data-bank="a"><button type="button" class="card gcard" data-ex="a" data-id="fw" data-label="방화벽" aria-pressed="false"><span class="art" aria-hidden="true"><svg viewBox="0 0 96 72"><g class="eq eq-card eq-fw">
+  <g class="door door-l"><rect class="eq-face" x="26" y="24" width="22" height="38"/>
+    <path class="eq-thin" d="M30 32h14M30 40h14M30 48h14M30 56h14"/></g>
+  <g class="door door-r"><rect class="eq-face" x="48" y="24" width="22" height="38"/>
+    <path class="eq-thin" d="M52 32h14M52 40h14M52 48h14M52 56h14"/></g>
+  <rect class="eq-base" x="2" y="12" width="24" height="50" rx="3"/>
+  <rect class="eq-base" x="70" y="12" width="24" height="50" rx="3"/>
+  <path class="eq-thin" d="M2 26h24M2 40h24M2 54h24M70 26h24M70 40h24M70 54h24"/>
+  <path class="lintel eq-edge" d="M24 22h48"/>
+  <rect class="eq-ground" x="0" y="62" width="96" height="5" rx="2.5"/>
+</g></svg></span><span class="nm">방화벽</span><span class="ro">허용한 접점만 통과시킨다</span><span class="li">통과한 내용이 안전한지는 보지 않는다</span></button><button type="button" class="card gcard" data-ex="a" data-id="ips" data-label="IPS" aria-pressed="false"><span class="art" aria-hidden="true"><svg viewBox="0 0 96 72"><g class="eq eq-card eq-ips">
+  <rect class="eq-base" x="6" y="28" width="18" height="34" rx="3"/>
+  <circle class="eq-bar" cx="15" cy="36" r="3.4"/>
+  <g class="boom">
+    <rect class="eq-bar" x="22" y="34" width="68" height="8" rx="4"/>
+    <path class="eq-dark" d="M34 34h8v8h-8zM52 34h8v8h-8zM70 34h8v8h-8z"/>
+  </g>
+  <rect class="eq-ground" x="0" y="62" width="96" height="5" rx="2.5"/>
+</g></svg></span><span class="nm">IPS</span><span class="ro">경로 위에서 의심 통신을 막는다</span><span class="li">막을 근거가 없으면 통과시킨다</span></button><button type="button" class="card gcard" data-ex="a" data-id="waf" data-label="WAF" aria-pressed="false"><span class="art" aria-hidden="true"><svg viewBox="0 0 96 72"><g class="eq eq-card eq-waf">
+  <rect class="eq-base" x="4" y="16" width="14" height="46" rx="3"/>
+  <rect class="eq-base" x="78" y="16" width="14" height="46" rx="3"/>
+  <rect class="gantry eq-base" x="4" y="8" width="88" height="14" rx="4"/>
+  <g clip-path="url(#waf-clip)">
+    <rect class="shutter eq-face" x="18" y="22" width="60" height="38"/>
+    <rect class="scan eq-bar" x="20" y="26" width="56" height="3.5" rx="2"/>
+  </g>
+  <rect class="eq-ground" x="0" y="62" width="96" height="5" rx="2.5"/>
+</g></svg></span><span class="nm">WAF</span><span class="ro">웹 서비스 앞에서 요청의 모양을 본다</span><span class="li">웹이 아닌 통신은 보지 않는다</span></button><button type="button" class="card gcard" data-ex="a" data-id="ids" data-label="IDS" aria-pressed="false"><span class="art" aria-hidden="true"><svg viewBox="0 0 96 72"><g class="eq eq-card eq-ids">
+  <path class="eq-base" d="M28 62 L36 26 h24 l8 36 z"/>
+  <path class="eq-thin" d="M33 44h30M31 53h34"/>
+  <rect class="eq-base" x="36" y="14" width="24" height="14" rx="3"/>
+  <circle class="dish eq-bar" cx="48" cy="21" r="4.6"/>
+  <circle class="ping" cx="48" cy="21" r="6"/>
+  <circle class="ping" cx="48" cy="21" r="6" style="animation-delay:.45s"/>
+  <rect class="eq-ground" x="20" y="62" width="56" height="5" rx="2.5"/>
+</g></svg></span><span class="nm">IDS</span><span class="ro">경로 밖에서 관찰해 알려준다</span><span class="li">알림은 확인의 시작이지 조치가 아니다</span></button><button type="button" class="card gcard" data-ex="a" data-id="ep" data-label="단말 보호" aria-pressed="false"><span class="art" aria-hidden="true"><svg viewBox="0 0 96 72"><g class="eq eq-card eq-ep">
+  <rect class="eq-base" x="8" y="10" width="80" height="44" rx="5"/>
+  <rect class="eq-glass" x="14" y="16" width="68" height="32" rx="3"/>
+  <path class="eq-thin" d="M20 24h30M20 31h22M20 38h34"/>
+  <rect class="eq-base" x="40" y="54" width="16" height="7" rx="2"/>
+  <rect class="eq-ground" x="26" y="61" width="44" height="5" rx="2.5"/>
+  <g class="badge-wrap">
+    <circle class="badge" cx="70" cy="40" r="11"/>
+    <path d="M66 40v-3a4 4 0 0 1 8 0v3" fill="none" stroke="var(--acclt)" stroke-width="2"/>
+    <rect x="65" y="40" width="10" height="8" rx="2" fill="var(--acclt)"/>
+  </g>
+</g></svg></span><span class="nm">단말 보호</span><span class="ro">기기 안에서 파일과 실행을 살핀다</span><span class="li">모든 악성 실행을 막지는 않는다</span></button><button type="button" class="card gcard" data-ex="a" data-id="log" data-label="기록 수집" aria-pressed="false"><span class="art" aria-hidden="true"><svg viewBox="0 0 96 72"><g class="eq eq-card eq-log">
+  <rect class="sheet eq-face" x="2" y="22" width="26" height="18" rx="2"/>
+  <rect class="eq-base" x="22" y="10" width="62" height="52" rx="4"/>
+  <path class="eq-thin" d="M22 27h62M22 44h62"/>
+  <rect class="eq-bar" x="46" y="16" width="14" height="4" rx="2"/>
+  <rect class="eq-bar" x="46" y="33" width="14" height="4" rx="2"/>
+  <rect class="eq-bar" x="46" y="50" width="14" height="4" rx="2"/>
+  <rect class="eq-ground" x="18" y="62" width="70" height="5" rx="2.5"/>
+</g></svg></span><span class="nm">기록 수집</span><span class="ro">기록을 점선으로 전달받아 모은다</span><span class="li">문제를 자동으로 해결하지 않는다</span></button></div><div class="stage rv"><svg viewBox="0 0 1040 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="교육용 구조 그림 — 통신이 지나가는 길과 설비 자리"><defs><clipPath id="waf-clip"><rect x="18" y="22" width="60" height="38" rx="3"/></clipPath></defs><g><rect class="zonep" x="96" y="150" width="372" height="150" rx="16"/><text class="zonetag" x="112" y="172">인터넷 구역 경계</text></g><g><rect class="zonep" x="520" y="150" width="470" height="150" rx="16"/><text class="zonetag" x="536" y="172">서비스</text></g><g><rect class="zonep" x="560" y="392" width="400" height="150" rx="16"/><text class="zonetag" x="576" y="414">단말과 기록</text></g><rect class="lane" x="24" y="201" width="992" height="38" rx="19"/><path class="lane-mid" d="M40 220 H 1000"/><path class="sight" d="M318 128 V 198"/><path class="feed" d="M176 244 C 240 380, 620 470, 792 468"/><path class="feed" d="M470 244 C 520 350, 700 452, 800 462"/><path class="feed" d="M700 468 H 792"/><path class="feed" d="M880 246 C 930 320, 910 400, 886 404"/><g class="node" data-node="user" data-x="56" data-y="220"><g transform="translate(17,190) scale(0.82)"><g class="eq">
+  <circle class="eq-base" cx="32" cy="18" r="10"/>
+  <path class="eq-base" d="M16 46a16 16 0 0 1 32 0z"/>
+  <rect class="eq-base" x="48" y="30" width="40" height="26" rx="3"/>
+  <rect class="eq-glass" x="52" y="34" width="32" height="18" rx="2"/>
+  <rect class="eq-ground" x="44" y="56" width="48" height="5" rx="2.5"/>
+</g></g><text class="nodet" x="56" y="276">이용자</text></g><g class="dslot" data-ex="a" data-node="fw" data-x="176" data-y="220" data-accept="fw" data-ph="자리 ①" data-value=""><rect class="pad" x="113" y="168" width="126" height="104" rx="12"/><g class="crate"><rect class="eq-base" x="138" y="194" width="76" height="52" rx="5"/><path class="eq-thin" d="M138 212h76M176 194v52"/></g><g transform="translate(128,184)"><g class="eq eq-fw">
+  <g class="door door-l"><rect class="eq-face" x="26" y="24" width="22" height="38"/>
+    <path class="eq-thin" d="M30 32h14M30 40h14M30 48h14M30 56h14"/></g>
+  <g class="door door-r"><rect class="eq-face" x="48" y="24" width="22" height="38"/>
+    <path class="eq-thin" d="M52 32h14M52 40h14M52 48h14M52 56h14"/></g>
+  <rect class="eq-base" x="2" y="12" width="24" height="50" rx="3"/>
+  <rect class="eq-base" x="70" y="12" width="24" height="50" rx="3"/>
+  <path class="eq-thin" d="M2 26h24M2 40h24M2 54h24M70 26h24M70 40h24M70 54h24"/>
+  <path class="lintel eq-edge" d="M24 22h48"/>
+  <rect class="eq-ground" x="0" y="62" width="96" height="5" rx="2.5"/>
+</g></g><text class="ph" x="176" y="224">자리 ①</text><text class="val" x="176" y="289"></text></g><g class="dslot" data-ex="a" data-node="ips" data-x="318" data-y="220" data-accept="ips" data-ph="경로 위 자리" data-value=""><rect class="pad" x="255" y="168" width="126" height="104" rx="12"/><g class="crate"><rect class="eq-base" x="280" y="194" width="76" height="52" rx="5"/><path class="eq-thin" d="M280 212h76M318 194v52"/></g><g transform="translate(270,184)"><g class="eq eq-ips">
+  <rect class="eq-base" x="6" y="28" width="18" height="34" rx="3"/>
+  <circle class="eq-bar" cx="15" cy="36" r="3.4"/>
+  <g class="boom">
+    <rect class="eq-bar" x="22" y="34" width="68" height="8" rx="4"/>
+    <path class="eq-dark" d="M34 34h8v8h-8zM52 34h8v8h-8zM70 34h8v8h-8z"/>
+  </g>
+  <rect class="eq-ground" x="0" y="62" width="96" height="5" rx="2.5"/>
+</g></g><text class="ph" x="318" y="224">경로 위 자리</text><text class="val" x="318" y="289"></text></g><g class="dslot" data-ex="a" data-node="waf" data-x="470" data-y="220" data-accept="waf" data-ph="웹 서비스 앞" data-value=""><rect class="pad" x="407" y="168" width="126" height="104" rx="12"/><g class="crate"><rect class="eq-base" x="432" y="194" width="76" height="52" rx="5"/><path class="eq-thin" d="M432 212h76M470 194v52"/></g><g transform="translate(422,184)"><g class="eq eq-waf">
+  <rect class="eq-base" x="4" y="16" width="14" height="46" rx="3"/>
+  <rect class="eq-base" x="78" y="16" width="14" height="46" rx="3"/>
+  <rect class="gantry eq-base" x="4" y="8" width="88" height="14" rx="4"/>
+  <g clip-path="url(#waf-clip)">
+    <rect class="shutter eq-face" x="18" y="22" width="60" height="38"/>
+    <rect class="scan eq-bar" x="20" y="26" width="56" height="3.5" rx="2"/>
+  </g>
+  <rect class="eq-ground" x="0" y="62" width="96" height="5" rx="2.5"/>
+</g></g><text class="ph" x="470" y="224">웹 서비스 앞</text><text class="val" x="470" y="289"></text></g><g class="node" data-node="web" data-x="620" data-y="220"><g transform="translate(581,190) scale(0.82)"><g class="eq">
+  <rect class="eq-base" x="6" y="10" width="84" height="52" rx="5"/>
+  <path class="eq-edge" d="M6 24h84"/>
+  <circle class="eq-bar" cx="16" cy="17" r="3"/><circle class="eq-bar" cx="26" cy="17" r="3"/>
+  <rect class="eq-glass" x="14" y="32" width="68" height="8" rx="4"/>
+  <rect class="eq-glass" x="14" y="46" width="44" height="8" rx="4"/>
+</g></g><text class="nodet" x="620" y="276">웹 표시</text></g><g class="node" data-node="app" data-x="760" data-y="220"><g transform="translate(721,190) scale(0.82)"><g class="eq">
+  <rect class="eq-base" x="10" y="14" width="76" height="46" rx="5"/>
+  <circle class="eq-glass" cx="40" cy="37" r="14"/>
+  <circle class="eq-base" cx="40" cy="37" r="6"/>
+  <path class="eq-edge" d="M40 19v6M40 49v6M22 37h6M52 37h6M28 25l4 4M52 45l-4-4M28 49l4-4M52 29l-4 4"/>
+  <rect class="eq-glass" x="62" y="26" width="16" height="22" rx="3"/>
+</g></g><text class="nodet" x="760" y="276">업무 처리</text></g><g class="node" data-node="db" data-x="900" data-y="220"><g transform="translate(861,190) scale(0.82)"><g class="eq">
+  <ellipse class="eq-base" cx="48" cy="18" rx="30" ry="9"/>
+  <path class="eq-base" d="M18 18v34a30 9 0 0 0 60 0V18"/>
+  <path class="eq-thin" d="M18 30a30 9 0 0 0 60 0M18 41a30 9 0 0 0 60 0"/>
+</g></g><text class="nodet" x="900" y="276">데이터 저장</text></g><g class="dslot" data-ex="a" data-node="ids" data-x="318" data-y="76" data-accept="ids" data-ph="관찰 자리(경로 밖)" data-value=""><rect class="pad" x="230" y="26" width="176" height="100" rx="12"/><g class="crate"><rect class="eq-base" x="280" y="50" width="76" height="52" rx="5"/><path class="eq-thin" d="M280 68h76M318 50v52"/></g><g transform="translate(270,40)"><g class="eq eq-ids">
+  <path class="eq-base" d="M28 62 L36 26 h24 l8 36 z"/>
+  <path class="eq-thin" d="M33 44h30M31 53h34"/>
+  <rect class="eq-base" x="36" y="14" width="24" height="14" rx="3"/>
+  <circle class="dish eq-bar" cx="48" cy="21" r="4.6"/>
+  <circle class="ping" cx="48" cy="21" r="6"/>
+  <circle class="ping" cx="48" cy="21" r="6" style="animation-delay:.45s"/>
+  <rect class="eq-ground" x="20" y="62" width="56" height="5" rx="2.5"/>
+</g></g><text class="ph" x="318" y="80">관찰 자리(경로 밖)</text><text class="val" x="318" y="143"></text></g><g class="dslot" data-ex="a" data-node="ep" data-x="660" data-y="468" data-accept="ep" data-ph="단말 안" data-value=""><rect class="pad" x="597" y="416" width="126" height="104" rx="12"/><g class="crate"><rect class="eq-base" x="622" y="442" width="76" height="52" rx="5"/><path class="eq-thin" d="M622 460h76M660 442v52"/></g><g transform="translate(612,432)"><g class="eq eq-ep">
+  <rect class="eq-base" x="8" y="10" width="80" height="44" rx="5"/>
+  <rect class="eq-glass" x="14" y="16" width="68" height="32" rx="3"/>
+  <path class="eq-thin" d="M20 24h30M20 31h22M20 38h34"/>
+  <rect class="eq-base" x="40" y="54" width="16" height="7" rx="2"/>
+  <rect class="eq-ground" x="26" y="61" width="44" height="5" rx="2.5"/>
+  <g class="badge-wrap">
+    <circle class="badge" cx="70" cy="40" r="11"/>
+    <path d="M66 40v-3a4 4 0 0 1 8 0v3" fill="none" stroke="var(--acclt)" stroke-width="2"/>
+    <rect x="65" y="40" width="10" height="8" rx="2" fill="var(--acclt)"/>
+  </g>
+</g></g><text class="ph" x="660" y="472">단말 안</text><text class="val" x="660" y="537"></text></g><g class="dslot" data-ex="a" data-node="log" data-x="880" data-y="468" data-accept="log" data-ph="기록이 모이는 자리" data-value=""><rect class="pad" x="817" y="416" width="126" height="104" rx="12"/><g class="crate"><rect class="eq-base" x="842" y="442" width="76" height="52" rx="5"/><path class="eq-thin" d="M842 460h76M880 442v52"/></g><g transform="translate(832,432)"><g class="eq eq-log">
+  <rect class="sheet eq-face" x="2" y="22" width="26" height="18" rx="2"/>
+  <rect class="eq-base" x="22" y="10" width="62" height="52" rx="4"/>
+  <path class="eq-thin" d="M22 27h62M22 44h62"/>
+  <rect class="eq-bar" x="46" y="16" width="14" height="4" rx="2"/>
+  <rect class="eq-bar" x="46" y="33" width="14" height="4" rx="2"/>
+  <rect class="eq-bar" x="46" y="50" width="14" height="4" rx="2"/>
+  <rect class="eq-ground" x="18" y="62" width="70" height="5" rx="2.5"/>
+</g></g><text class="ph" x="880" y="472">기록이 모이는 자리</text><text class="val" x="880" y="537"></text></g></svg></div><div class="kbrow rv"><span class="lbl">자리에 놓기</span><button class="pbtn" type="button" data-place="fw">자리 ① <span class="pv none">비어 있음</span></button><button class="pbtn" type="button" data-place="ips">경로 위 자리 <span class="pv none">비어 있음</span></button><button class="pbtn" type="button" data-place="waf">웹 서비스 앞 <span class="pv none">비어 있음</span></button><button class="pbtn" type="button" data-place="ids">관찰 자리 <span class="pv none">비어 있음</span></button><button class="pbtn" type="button" data-place="ep">단말 안 <span class="pv none">비어 있음</span></button><button class="pbtn" type="button" data-place="log">기록이 모이는 자리 <span class="pv none">비어 있음</span></button><span class="note">카드를 고른 뒤 그림의 자리 또는 이 버튼을 누르세요</span></div><div class="gate rv"><div class="grow"><button type="button" class="runbtn" id="gatebtn">자리 확인</button><span class="msg">여섯 자리를 채운 뒤 자리 확인을 누르세요.</span></div></div><div class="toggles rv"><label class="tg"><input type="checkbox" id="tg-web" checked> 웹 표시 접점 허용</label><label class="tg"><input type="checkbox" id="tg-admin"> 관리 접점 외부 허용</label><span class="note">허용 범위를 좁게 두는 것이 방화벽의 힘이다</span></div><div class="runrow rv"><span class="lbl">흘려보기</span><button type="button" class="runbtn" data-run="sc04-1" data-idx="0">A 낯선 첨부</button><button type="button" class="runbtn" data-run="sc04-1" data-idx="1">B 느려진 홈페이지</button><button type="button" class="runbtn" data-run="sc04-1" data-idx="2">C 열리지 않는 파일</button><button type="button" class="runbtn" data-run="sc04-1" data-idx="3">D 예상 밖 결과</button></div><div class="log rv"><span class="empty">아직 흘려보내지 않았습니다.</span></div><p class="hint rv" style="margin:14px 0 0">네 건을 보냈으면 아래로 내려가 운영 상태를 보세요. 허용 범위를 바꾸면 그 판단으로 다시 보내야 합니다.</p><div class="expl"><p class="ttl">해설</p><p>방화벽은 어디로 가는가를, WAF는 무엇을 요청하는가를 본다. IDS는 경로 밖에서 관찰해 알려주고 IPS는 경로 위에서 막는다. 단말 보호는 기기 안에서 일하고, 기록 수집은 점선으로 전달받을 뿐 문제를 자동으로 해결하지 않는다.</p><div class="rows"></div><p class="basis">근거 RFCH04-002~007</p></div></div></section>
+<section class="scene alt" id="sc04-2"><div class="bignum" aria-hidden="true">02</div><div class="inner"><span class="step rv">장면 2</span><h2 class="rv">운영이 성립하는가</h2><p class="hint rv">이기는 조건은 막은 수가 아닙니다. 서비스가 열려 있고, 필요 없는 접점이 닫혀 있고, 뜬 알림을 확인 대상으로 남겼는가입니다.</p><p class="hint rv" style="margin:0 0 8px">알림이 뜬 건 — 어떻게 남길지 고르세요</p><div class="checks rv"><span class="empty">아직 알림이 없습니다. 통신을 흘려보내면 여기에 쌓입니다.</span></div><p class="hint rv" style="margin:14px 0 8px">운영 상태</p><div class="lamps rv" role="group" aria-label="운영 상태" aria-live="polite"><div class="lamp" id="lamp-svc"><h4><span class="dot"></span>필요한 서비스가 열려 있다<span class="state">확인 중</span></h4><p>이용자가 홈페이지에 닿는다. 다 닫으면 안전하지만 서비스가 아니다.</p></div><div class="lamp" id="lamp-narrow"><h4><span class="dot"></span>필요 없는 접점이 닫혀 있다<span class="state">확인 중</span></h4><p>관리 접점을 외부에 열어 두지 않았다. 허용 범위를 좁게 두는 것이 방화벽의 힘이다.</p></div><div class="lamp" id="lamp-alert"><h4><span class="dot"></span>알림을 확인 대상으로 남겼다<span class="state">확인 중</span></h4><p>알림은 확인의 시작이지 조치가 아니다. 뜬 알림을 모두 확인 대상으로 남겼다.</p></div></div><p class="runsleft rv" id="runsleft" aria-live="polite">흘려보낸 통신 <b>0 / 4</b> — <span class="tail">네 건을 모두 보내야 운영 상태를 판정합니다. 자리나 허용 범위를 바꾸면 다시 보내야 합니다.</span></p><div class="expl"><p class="ttl">해설</p><p>세 가지가 동시에 성립해야 운영이다. 다 닫으면 안전하지만 서비스가 아니고, 다 열면 서비스지만 허용 범위가 넓어진다. 그리고 알림은 확인의 시작이지 조치가 아니다 — 뜬 알림은 확인 대상으로 남긴다.</p><div class="rows"></div><p class="basis">근거 RFCH04-002 · 004 · 006</p></div></div></section>
+<section class="scene" id="sc04-3" data-ex="c"><div class="bignum" aria-hidden="true">03</div><div class="inner"><span class="step rv">장면 3</span><h2 class="rv">자리와 한계를 함께 붙인다</h2><p class="hint rv">놓아 본 기능의 자리와 한계를 고릅니다. 기능은 위치·역할과 함께 한계로 이해합니다.</p><div class="qs rv" data-qgroup="q1" data-correct="1" data-qlabel="IDS와 IPS의 자리"><div class="qq">IDS와 IPS의 자리 차이로 옳은 것은?</div><label class="opt"><input type="radio" name="q1" value="0" data-label="둘 다 통신 경로 위에 놓인다"><span>둘 다 통신 경로 위에 놓인다</span></label><label class="opt"><input type="radio" name="q1" value="1" data-label="IDS는 경로 밖에서 관찰해 알려주고, IPS는 경로 위에서 막는다"><span>IDS는 경로 밖에서 관찰해 알려주고, IPS는 경로 위에서 막는다</span></label><label class="opt"><input type="radio" name="q1" value="2" data-label="IDS는 단말 안에, IPS는 서버 안에 있다"><span>IDS는 단말 안에, IPS는 서버 안에 있다</span></label><label class="opt"><input type="radio" name="q1" value="3" data-label="IDS는 막고 IPS는 알려준다"><span>IDS는 막고 IPS는 알려준다</span></label></div><div class="qs rv" data-qgroup="q2" data-correct="1" data-qlabel="방화벽의 한계"><div class="qq">방화벽이 하지 않는 일은?</div><label class="opt"><input type="radio" name="q2" value="0" data-label="허용하지 않은 접점·주소 제한"><span>허용하지 않은 접점·주소 제한</span></label><label class="opt"><input type="radio" name="q2" value="1" data-label="통과한 통신의 내용이 안전한지 판단"><span>통과한 통신의 내용이 안전한지 판단</span></label><label class="opt"><input type="radio" name="q2" value="2" data-label="허용한 접점으로 오는 통신만 통과"><span>허용한 접점으로 오는 통신만 통과</span></label><label class="opt"><input type="radio" name="q2" value="3" data-label="통신 접근 제한"><span>통신 접근 제한</span></label></div><div class="qs rv" data-qgroup="q3" data-correct="1" data-qlabel="알림의 뜻"><div class="qq">IDS의 알림을 받았을 때 옳은 것은?</div><label class="opt"><input type="radio" name="q3" value="0" data-label="알림이 곧 조치가 끝났다는 뜻이다"><span>알림이 곧 조치가 끝났다는 뜻이다</span></label><label class="opt"><input type="radio" name="q3" value="1" data-label="알림은 확인의 시작이며, 알림이 곧 조치는 아니다"><span>알림은 확인의 시작이며, 알림이 곧 조치는 아니다</span></label><label class="opt"><input type="radio" name="q3" value="2" data-label="알림이 오면 사고가 확정된다"><span>알림이 오면 사고가 확정된다</span></label><label class="opt"><input type="radio" name="q3" value="3" data-label="알림은 IPS가 막았다는 뜻이다"><span>알림은 IPS가 막았다는 뜻이다</span></label></div><div class="qs rv" data-qgroup="q4" data-correct="2" data-qlabel="백업"><div class="qq">백업에 대해 5장에서 강조한 것은?</div><label class="opt"><input type="radio" name="q4" value="0" data-label="백업이 있으면 어떤 공격도 안전하다"><span>백업이 있으면 어떤 공격도 안전하다</span></label><label class="opt"><input type="radio" name="q4" value="1" data-label="백업은 업데이트를 대신할 수 있다"><span>백업은 업데이트를 대신할 수 있다</span></label><label class="opt"><input type="radio" name="q4" value="2" data-label="항상 연결된 백업은 함께 피해를 입을 수 있다. 분리 보관과 복구 시험이 필요하다"><span>항상 연결된 백업은 함께 피해를 입을 수 있다. 분리 보관과 복구 시험이 필요하다</span></label><label class="opt"><input type="radio" name="q4" value="3" data-label="백업은 한 번 만들면 끝이다"><span>백업은 한 번 만들면 끝이다</span></label></div><div class="expl"><p class="ttl">해설</p><p>세 기능(접근 제한·업데이트·백업)은 서로 대체하지 않으며 완전 보호도 아니다. 각 기능은 하는 일과 하지 않는 일을 함께 본다.</p><div class="rows"></div><p class="basis">근거 RFCH04-003 · 004 · 005 · 008 · 011</p></div></div></section>
+<section class="scene alt" id="sc-end"><div class="inner"><span class="step rv">마무리</span><div id="scorebox" class="rv"><p class="score"><span class="big">채점하기를 누르세요</span><small>보호 기능은 위치와 역할, 그리고 한계로 이해한다.</small></p></div><p class="hint rv">운영 상태는 장면 2의 등 셋으로, 지식 확인은 아래 점수로 나뉩니다. 둘은 서로 다른 것을 봅니다.</p><div class="gradebar rv"><button type="button" class="main" id="grade">채점하기</button><button type="button" class="ghost" id="reset">다시 하기</button><button type="button" class="ghost" id="printbtn">인쇄</button></div><nav class="end rv"><a href="SOC2026_practice_ch05.html">← 5장 기본형 실습</a><a href="SOC2026_quiz_ch05.html">5장 퀴즈 풀기</a><a href="SOC2026_practice_ch06.html">다음 실습 6장 →</a></nav></div></section>
+<footer>SOC 2026 · 보안관제 입문 · 실습 · 운영 판단형</footer>
+<script>window.__FLOW__={"sc04-1":{"start": "user", "scenarios": [{"name": "A 낯선 첨부", "steps": [{"node": "fw", "v": "pass", "text": "이 예시는 메일 통신이 허용된 상황이다. 웹 표시 접점 토글은 이 메일의 허용 여부를 바꾸지 않는다. 방화벽은 어디로 가는가를 볼 뿐, 통과한 통신의 내용이 안전한지는 판단하지 않는다."}, {"node": "ep", "v": "alert", "ckWhy": "단말 보호가 이상한 행동을 탐지·중단했다.", "text": "단말 보호가 실행되는 것의 이상한 행동을 탐지·중단한다. 다만 모든 악성 실행을 막지는 않는다 — 4장의 '낯선 요청은 별도 경로로 확인'이라는 사람의 행동이 함께 필요하다."}, {"node": "log", "side": true, "v": "pass", "text": "점선으로 기록이 전달된다. 기록 전달은 서비스 통신과 다른 흐름이며, 기록 수집이 문제를 자동으로 해결하지는 않는다."}], "done": "막거나 알려주는 자리는 하나가 아니다."}, {"name": "B 느려진 홈페이지", "steps": [{"node": "fw", "v": "stop", "ifToggle": "tg-web", "ifOn": false, "text": "웹 표시 접점을 허용하지 않았다. 이 요청은 방화벽에서 제한되어 서비스까지 가지 않는다."}, {"node": "fw", "v": "pass", "ifToggle": "tg-web", "ifOn": true, "text": "웹 표시 접점을 허용했으므로 통신이 통과한다. 허용은 안전의 보증이 아니다 — 통과한 통신의 내용이 안전한지는 방화벽이 판단하지 않는다."}, {"node": "fw", "v": "check", "ifToggle": "tg-admin", "ifOn": true, "text": "관리 접점까지 외부에 열려 있다. 탐지 알림이 아니라 설정 점검 항목이다 — 허용 범위를 좁게 두는 것이 방화벽의 힘이다."}, {"node": "ips", "v": "pass", "text": "IPS는 경로 위에서 의심 통신을 통과 전에 막는 자리다. 이 요청은 형태만으로 막을 근거가 없어 통과한다."}, {"node": "ids", "side": true, "v": "alert", "ckWhy": "IDS가 경로 밖에서 관찰해 알렸다.", "text": "IDS는 경로 밖에서 통신을 관찰해 알려준다. 통신 자체가 IDS를 지나가지는 않는다. 알림은 확인의 시작이며, 알림이 곧 조치는 아니다."}, {"node": "web", "v": "pass", "text": "요청은 웹 표시까지 도달한다."}, {"node": "log", "side": true, "v": "pass", "text": "점선으로 기록이 전달된다. 기록 전달은 서비스 통신과 다른 흐름이며, 기록 수집이 문제를 자동으로 해결하지는 않는다."}], "done": "알려주는 기능과 막는 기능은 자리가 다르다."}, {"name": "C 열리지 않는 파일", "steps": [{"node": "ep", "v": "alert", "ckWhy": "단말 안에서 파일과 실행을 살피는 자리가 알렸다.", "text": "단말 안에서 파일과 실행을 살피는 자리가 알린다. 네트워크 보호는 길에서, 단말 보호는 기기 안에서 일한다."}, {"node": "log", "side": true, "v": "pass", "text": "점선으로 기록이 전달된다. 기록 전달은 서비스 통신과 다른 흐름이며, 기록 수집이 문제를 자동으로 해결하지는 않는다."}], "done": "되살리는 준비는 백업이다. 항상 연결된 백업은 함께 피해를 입을 수 있어 분리 보관과 복구 시험이 필요하다."}, {"node": null, "name": "D 예상 밖 결과", "steps": [{"node": "fw", "v": "stop", "ifToggle": "tg-web", "ifOn": false, "text": "웹 표시 접점을 허용하지 않았다. 이 요청은 방화벽에서 제한되어 서비스까지 가지 않는다."}, {"node": "fw", "v": "pass", "ifToggle": "tg-web", "ifOn": true, "text": "웹 표시 접점을 허용했으므로 통신이 통과한다. 허용은 안전의 보증이 아니다 — 통과한 통신의 내용이 안전한지는 방화벽이 판단하지 않는다."}, {"node": "fw", "v": "check", "ifToggle": "tg-admin", "ifOn": true, "text": "관리 접점까지 외부에 열려 있다. 탐지 알림이 아니라 설정 점검 항목이다 — 허용 범위를 좁게 두는 것이 방화벽의 힘이다."}, {"node": "ips", "v": "pass", "text": "경로 위에서 막을 근거가 없어 통과한다."}, {"node": "waf", "v": "stop", "text": "WAF는 웹 서비스 앞에서 요청의 모양을 확인해 예상 밖 요청을 막거나 알린다. 다만 웹이 아닌 통신의 접근 제한은 하지 않으며, 모든 웹 침해를 막지도 않는다."}], "done": ""}]}};</script>
+<script>
+(function(){
+var $=function(s,r){return (r||document).querySelector(s);};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+var byId=function(i){return document.getElementById(i);};
+window.__FLOW__=window.__FLOW__||{};
+var FLOW=window.__FLOW__;
+var VTAG={pass:'통과',stop:'제한',odd:'예상 밖',alert:'알림',hold:'대기',check:'설정 점검'};
+var sel=null, RUN={}, graded=false;
+function still(){ return document.body.classList.contains('nomo')
+  || window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+function goTo(el){ el.scrollIntoView({behavior: still()?'auto':'smooth', block:'start'}); }
+function goTop(){ window.scrollTo({top:0, behavior: still()?'auto':'smooth'}); }
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('nomo');
+
+/* ---------- 스크롤 등장 · 진행 ---------- */
+var scenes=$$('.scene');
+var io=new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in'); });
+},{threshold:.15});
+scenes.forEach(function(s){ io.observe(s); });
+
+$$('.stage svg path.dr').forEach(function(p){
+  try{ var L=Math.ceil(p.getTotalLength())+2; p.style.setProperty('--L',L); }catch(e){}
+});
+scenes.forEach(function(sc){
+  $$('.rv',sc).forEach(function(el,k){ el.style.setProperty('--d',(Math.min(k,8)*0.075)+'s'); });
+  $$('.stage svg g.node',sc).forEach(function(g,k){ g.style.setProperty('--d',(0.35+k*0.09)+'s'); });
+});
+
+var prog=$('.topbar i'), railbtns=$$('.rail button');
+function onScroll(){
+  var h=document.documentElement.scrollHeight-window.innerHeight;
+  if(prog) prog.style.width=(h>0?(window.scrollY/h*100):0)+'%';
+  var mid=window.scrollY+window.innerHeight*0.45, cur=0;
+  scenes.forEach(function(s,i){ if(s.offsetTop<=mid) cur=i; });
+  railbtns.forEach(function(b,i){ b.classList.toggle('on',i===cur); });
+}
+window.addEventListener('scroll',onScroll,{passive:true});
+window.addEventListener('resize',onScroll);
+railbtns.forEach(function(b,i){
+  b.addEventListener('click',function(){ goTo(scenes[i]); });
+});
+onScroll();
+
+var mb=$('.motionbtn');
+if(mb) mb.addEventListener('click',function(){
+  var off=document.body.classList.toggle('nomo');
+  document.documentElement.classList.toggle('nomo',off
+    || window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  mb.textContent=off?'움직임 켜기':'움직임 끄기';
+  mb.setAttribute('aria-pressed',off?'true':'false');
+});
+
+/* ---------- 카드 놓기 ---------- */
+function cardById(ex,id){ return $('.card[data-ex="'+ex+'"][data-id="'+id+'"]'); }
+function armAll(on){ $$('.win,.gap').forEach(function(t){ t.classList.toggle('armed',!!on); }); }
+function clearSel(){ if(sel){ sel.el.classList.remove('sel'); sel.el.setAttribute('aria-pressed','false'); } sel=null; armAll(false); }
+function pick(c){
+  if(graded) return;
+  if(sel&&sel.el===c){ clearSel(); return; }
+  clearSel(); sel={el:c,ex:c.dataset.ex}; c.classList.add('sel'); c.setAttribute('aria-pressed','true'); armAll(true);
+}
+function flyTo(c,dest){
+  var a=c.getBoundingClientRect();
+  dest.appendChild(c);
+  if(still()) return;
+  var b=c.getBoundingClientRect();
+  var dx=a.left-b.left, dy=a.top-b.top;
+  if(!dx&&!dy) return;
+  c.classList.add('flying'); c.style.transform='translate('+dx+'px,'+dy+'px)';
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    c.style.transform='';
+    setTimeout(function(){ c.classList.remove('flying'); },450);
+  });});
+}
+function toBank(c){
+  var bank=$('.bank[data-bank="'+c.dataset.ex+'"]');
+  if(!bank) return;
+  delete c.dataset.bin; c.classList.remove('used');
+  flyTo(c,bank); mark();
+}
+function placeInWin(win){
+  if(graded||!sel||sel.ex!==win.dataset.ex) return;
+  var c=sel.el; c.dataset.bin=win.dataset.bin; clearSel();
+  flyTo(c,$('.hold',win)); mark();
+}
+function placeInGap(g){
+  if(graded||!sel||sel.ex!==g.dataset.ex) return;
+  var c=sel.el, prev=g.dataset.value;
+  if(prev){ var pc=cardById(g.dataset.ex,prev); if(pc) pc.classList.remove('used'); }
+  g.dataset.value=c.dataset.id; g.textContent=c.dataset.label;
+  g.classList.remove('empty'); g.classList.add('filled');
+  c.classList.add('used'); clearSel(); mark();
+}
+function clearGap(g){
+  if(graded||!g.dataset.value) return;
+  var pc=cardById(g.dataset.ex,g.dataset.value); if(pc) pc.classList.remove('used');
+  g.dataset.value=''; g.textContent=g.dataset.ph;
+  g.classList.remove('filled'); g.classList.add('empty'); mark();
+}
+document.addEventListener('click',function(e){
+  var c=e.target.closest&&e.target.closest('.card');
+  if(c){
+    if(graded) return;
+    if(c.closest('.hold')){
+      if(!(sel&&sel.el!==c&&sel.ex===c.dataset.ex)){ e.stopPropagation(); toBank(c); return; }
+    } else { e.stopPropagation(); pick(c); return; }
+  }
+  var w=e.target.closest&&e.target.closest('.win');
+  if(w){ e.stopPropagation(); placeInWin(w); return; }
+  var g=e.target.closest&&e.target.closest('.gap');
+  if(g){ e.stopPropagation(); if(sel) placeInGap(g); else clearGap(g); return; }
+  if(sel&&!(e.target.closest&&e.target.closest('.runbtn'))) clearSel();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){ clearSel(); return; }
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  var t=document.activeElement; if(!t||!t.classList) return;
+  if(t.classList.contains('dropbtn')){ e.preventDefault(); placeInWin(t.closest('.win')); }
+});
+
+/* ---------- 흐름 실행 ---------- */
+function nodePos(svg,id){
+  var g=$('[data-node="'+id+'"]',svg); if(!g) return null;
+  return {x:parseFloat(g.dataset.x),y:parseFloat(g.dataset.y)};
+}
+function animate(c,from,to,ms,alive){
+  return new Promise(function(res){
+    if(still()){ c.setAttribute('cx',to.x); c.setAttribute('cy',to.y); setTimeout(res,150); return; }
+    var t0=Date.now(), tick=0, iv=setInterval(function(){
+      if(alive&&!alive()){ clearInterval(iv); res(); return; }
+      var p=Math.min(1,(Date.now()-t0)/ms), e=p<.5?2*p*p:-1+(4-2*p)*p;
+      var nx=from.x+(to.x-from.x)*e, ny=from.y+(to.y-from.y)*e;
+      if((tick++%5)===0 && c.parentNode) trailAt(c.parentNode,nx,ny);
+      c.setAttribute('cx',nx); c.setAttribute('cy',ny);
+      var h=c.previousSibling;
+      if(h&&h.getAttribute&&h.getAttribute('class')==='pk-halo'){ h.setAttribute('cx',nx); h.setAttribute('cy',ny); }
+      if(p>=1){ clearInterval(iv); if(c.parentNode) pulseAt(c.parentNode,to.x,to.y); res(); }
+    },16);
+  });
+}
+function trailAt(layer,x,y){
+  var t=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  t.setAttribute('class','trail'); t.setAttribute('r',6);
+  t.setAttribute('cx',x); t.setAttribute('cy',y); layer.insertBefore(t,layer.firstChild);
+  var o=.34, iv=setInterval(function(){
+    o-=.045; t.setAttribute('opacity',Math.max(0,o));
+    if(o<=0){ clearInterval(iv); if(t.parentNode) t.parentNode.removeChild(t); }
+  },40);
+}
+function pulseAt(layer,x,y){
+  var r=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  r.setAttribute('class','pulse'); r.setAttribute('cx',x); r.setAttribute('cy',y);
+  r.setAttribute('r',10); layer.appendChild(r);
+  var k=10, o=.9, iv=setInterval(function(){
+    k+=2.4; o-=.055; r.setAttribute('r',k); r.setAttribute('opacity',Math.max(0,o));
+    if(o<=0){ clearInterval(iv); if(r.parentNode) r.parentNode.removeChild(r); }
+  },28);
+}
+function logLine(box,v,text){
+  var em=box.querySelector('.empty'); if(em) box.innerHTML='';
+  var d=document.createElement('div'); d.className='li';
+  d.innerHTML='<span class="tag t-'+v+'"></span><span class="tx"></span>';
+  $('.tag',d).textContent=VTAG[v]||v;
+  $('.tx',d).textContent=text; box.appendChild(d);
+}
+function freshLayer(svg){
+  $$('.runlayer',svg).forEach(function(n){ n.remove(); });
+  var l=document.createElementNS('http://www.w3.org/2000/svg','g');
+  l.setAttribute('class','runlayer'); l.setAttribute('pointer-events','none'); svg.appendChild(l); return l;
+}
+function makeDot(layer,x,y,r){
+  var h=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  h.setAttribute('class','pk-halo'); h.setAttribute('r',(r||9)*2.1);
+  h.setAttribute('cx',x); h.setAttribute('cy',y); layer.appendChild(h);
+  var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('class','pk'); c.setAttribute('r',r||9);
+  c.setAttribute('cx',x); c.setAttribute('cy',y); layer.appendChild(c); return c;
+}
+function runScenario(sceneId,idx){
+  var sc=byId(sceneId), svg=$('.stage svg',sc), box=$('.log',sc), cfg=FLOW[sceneId];
+  if(!sc||!svg||!cfg) return;
+  var seq=(RUN[sceneId]=(RUN[sceneId]||0)+1);
+  function alive(){ return RUN[sceneId]===seq; }
+  var s=cfg.scenarios[idx]; if(!s) return;
+  var steps=s.steps.filter(function(st){
+    if(!st.ifToggle) return true;
+    var t=byId(st.ifToggle); return !!t && t.checked===!!st.ifOn;
+  });
+  var btns=$$('.runbtn[data-run]',sc);
+  btns.forEach(function(b,i){ b.disabled=true; b.classList.toggle('on',i===idx); });
+  box.innerHTML='';
+  var layer=freshLayer(svg);
+  var start=nodePos(svg,cfg.start)||{x:60,y:170};
+  var c=makeDot(layer,start.x,start.y,9);
+  var at=start, i=0;
+  function done(){ btns.forEach(function(b){ b.disabled=false; }); }
+  function step(){
+    if(!alive()) return;
+    if(i>=steps.length){
+      if(s.done) logLine(box,'pass',s.done);
+      if(window.__GAME_DONE__) window.__GAME_DONE__(idx);
+      done(); return;
+    }
+    var st=steps[i++], p=nodePos(svg,st.node);
+    if(!p){ step(); return; }
+    if(st.side){
+      logLine(box,st.v||'pass',st.text||'');
+      if(window.__GAME_STEP__) window.__GAME_STEP__(idx,st);
+      setTimeout(step,320); return;
+    }
+    animate(c,at,p,720,alive).then(function(){
+      if(!alive()) return;
+      at=p; logLine(box,st.v||'pass',st.text||'');
+      if(window.__GAME_STEP__) window.__GAME_STEP__(idx,st);
+      if(st.v==='stop'||st.v==='odd'){
+        c.setAttribute('r',12);
+        if(window.__GAME_DONE__) window.__GAME_DONE__(idx);
+        done(); return;
+      }
+      setTimeout(step,360);
+    });
+  }
+  if(window.__GAME_BEGIN__) window.__GAME_BEGIN__(idx);
+  setTimeout(step,200);
+}
+$$('.runbtn[data-run]').forEach(function(b){
+  b.addEventListener('click',function(){ runScenario(b.dataset.run,parseInt(b.dataset.idx,10)); });
+});
+
+/* ---------- 처리 여력 ---------- */
+function runCap(sceneId,n){
+  var sc=byId(sceneId), svg=$('.stage svg',sc), box=$('.log',sc), g=$('.gauge',sc);
+  if(!sc||!svg) return;
+  var capv=parseInt(sc.dataset.cap||'4',10);
+  var seq=(RUN[sceneId]=(RUN[sceneId]||0)+1);
+  function alive(){ return RUN[sceneId]===seq; }
+  var btns=$$('.runbtn[data-run]',sc); btns.forEach(function(b){ b.disabled=true; });
+  box.innerHTML='';
+  var layer=freshLayer(svg);
+  var desk=nodePos(svg,'desk2')||{x:640,y:170};
+  g.classList.toggle('over',n>capv);
+  $('.bar i',g).style.width=Math.min(100,n/capv*100)+'%';
+  $('.now',g).textContent=n+'건';
+  var served=Math.min(n,capv);
+  var waiting=Math.max(0,Math.min(n-capv,capv));
+  var dropped=Math.max(0,n-capv*2);
+  var made=0, fin=0;
+  function finish(){
+    if(!alive()) return;
+    if(served) logLine(box,'pass','처리됨 '+served+'건 — 차례대로 처리');
+    if(waiting) logLine(box,'hold','기다림 '+waiting+'건 — 긴 기다림');
+    if(dropped) logLine(box,'stop','처리되지 않음 '+dropped+'건 — 처리 여력을 넘겼다');
+    logLine(box,'alert','혼잡과 공격은 다르다. 누가 왜 몰리는지는 확인이 필요하다.');
+    btns.forEach(function(b){ b.disabled=false; });
+  }
+  for(var k=0;k<n;k++){
+    (function(k){
+      var y=170+((k%5)-2)*18;
+      var c=makeDot(layer,70,y,7); made++;
+      var kind = k<served ? 'go' : (k<served+waiting ? 'wait' : 'drop');
+      var tgt = kind==='go' ? {x:desk.x,y:desk.y}
+              : kind==='wait' ? {x:desk.x-150,y:desk.y-52+((k%4)*26)}
+              : {x:150,y:y+92};
+      setTimeout(function(){
+        if(!alive()) return;
+        animate(c,{x:70,y:y},tgt,kind==='go'?1050:850,alive).then(function(){
+          if(!alive()) return;
+          if(kind==='go') c.setAttribute('opacity','.28');
+          else if(kind==='wait') c.setAttribute('fill','#FFDE95');
+          else { c.setAttribute('fill','#FFB4A2'); c.setAttribute('opacity','.5'); }
+          if(++fin===made) finish();
+        });
+      },k*110);
+    })(k);
+  }
+}
+$$('.runbtn[data-cap]').forEach(function(b){
+  b.addEventListener('click',function(){
+    $$('.runbtn[data-cap]',b.closest('.scene')).forEach(function(x){ x.classList.toggle('on',x===b); });
+    runCap(b.dataset.cap,parseInt(b.dataset.n,10));
+  });
+});
+
+/* ---------- 흐르는 기록 붙잡기 ---------- */
+function holdStream(sc,on){
+  var st=$('.stream',sc), roll=$('.roll',st), row=$('.row.pick',roll), pk=$('.picked',sc);
+  st.classList.toggle('hold',on);
+  if(on&&row){
+    var off=Math.max(0,row.offsetTop-(st.clientHeight/2-row.offsetHeight/2));
+    roll.style.animation='none'; roll.style.transform='translateY(-'+off+'px)';
+  } else {
+    roll.style.animation=''; roll.style.transform='';
+  }
+  if(pk) pk.style.display=on?'grid':'none';
+}
+$$('[data-hold]').forEach(function(b){
+  b.addEventListener('click',function(){
+    var sc=byId(b.dataset.hold);
+    var on=!$('.stream',sc).classList.contains('hold');
+    holdStream(sc,on);
+    b.textContent=on?'다시 흐르게':'한 줄 붙잡기';
+    b.classList.toggle('on',on);
+  });
+});
+
+/* ---------- 채점 ---------- */
+function gradeScene(sc){
+  var ok=0,total=0,rows=[];
+  $$('.dslot',sc).forEach(function(g){
+    total++;
+    var want=g.dataset.accept||'', v=g.dataset.value||'';
+    var good=(want===v); if(good)ok++;
+    g.classList.remove('ok','no'); g.classList.add(good?'ok':'no');
+    function nm(id){ var c=cardById(g.dataset.ex,id); return c?c.dataset.label:id; }
+    rows.push({g:good,t:'<b>'+g.dataset.ph+'</b> — 놓은 것: '+(v?nm(v):'비어 있음')+(good?'':' / 정답: '+nm(want))});
+  });
+  $$('.gap',sc).forEach(function(g){
+    total++;
+    var acc=(g.dataset.accept||'').split('|').filter(Boolean), v=g.dataset.value||'';
+    var good=acc.indexOf(v)>=0; if(good)ok++;
+    g.classList.add(good?'ok':'no');
+    var want=acc.map(function(id){var c=cardById(g.dataset.ex,id);return c?c.dataset.label:id;}).join(' 또는 ');
+    var got=v?(cardById(g.dataset.ex,v)||{dataset:{}}).dataset.label:'비어 있음';
+    rows.push({g:good,t:'<b>'+(g.dataset.name||g.dataset.ph)+'</b> — 놓은 것: '+got+(good?'':' / 정답: '+want)});
+  });
+  var ws=$$('.win',sc);
+  if(ws.length){
+    var names={}; ws.forEach(function(w){ names[w.dataset.bin]=$('h3',w).textContent; });
+    $$('.card[data-answer]',sc).forEach(function(c){
+      total++;
+      var want=c.dataset.answer.split('|'), got=c.dataset.bin||'';
+      var good=want.indexOf(got)>=0; if(good)ok++;
+      rows.push({g:good,t:'<b>'+c.dataset.label+'</b> → '+(names[got]||'놓지 않음')
+        +(good?'':' / 정답: '+want.map(function(w){return names[w];}).join(' 또는 '))});
+    });
+  }
+  $$('[data-qgroup]',sc).forEach(function(q){
+    total++;
+    var opts=$$('input[name="'+q.dataset.qgroup+'"]',q);
+    var chosen=opts.filter(function(o){return o.checked;})[0];
+    var ai=parseInt(q.dataset.correct,10);
+    var good=chosen&&parseInt(chosen.value,10)===ai; if(good)ok++;
+    opts.forEach(function(o,k){ var l=o.closest('.opt'); if(k===ai)l.classList.add('is-answer'); if(chosen===o)l.classList.add('is-chosen'); o.disabled=true; });
+    rows.push({g:good,t:'<b>'+(q.dataset.qlabel||'선택')+'</b> — 고른 것: '+(chosen?chosen.dataset.label:'고르지 않음')
+      +(good?'':' / 정답: '+(opts[ai]?opts[ai].dataset.label:''))});
+  });
+  return {ok:ok,total:total,rows:rows};
+}
+function mark(){
+  scenes.forEach(function(sc){
+    if(!sc.dataset.ex) return;
+    var need=$$('.gap',sc).length+$$('.dslot',sc).length+$$('.card[data-answer]',sc).length+$$('[data-qgroup]',sc).length;
+    var have=$$('.gap',sc).filter(function(g){return g.dataset.value;}).length
+            +$$('.dslot',sc).filter(function(g){return g.dataset.value;}).length
+            +$$('.card[data-answer]',sc).filter(function(c){return c.dataset.bin;}).length
+            +$$('[data-qgroup]',sc).filter(function(q){return $('input:checked',q);}).length;
+    sc.classList.toggle('done',need>0&&have>=need);
+  });
+}
+$$('.opt input').forEach(function(o){ o.addEventListener('change',mark); });
+function mark2(){ mark(); if(window.__GAME_MARK__) window.__GAME_MARK__(); }
+
+var gbtn=byId('grade');
+if(gbtn) gbtn.addEventListener('click',function(){
+  graded=true; clearSel();
+  var ok=0,total=0;
+  scenes.forEach(function(sc){
+    sc.classList.add('graded');
+    if(!sc.dataset.ex) return;
+    var r=gradeScene(sc); ok+=r.ok; total+=r.total;
+    var box=$('.rows',sc);
+    if(box) box.innerHTML=r.rows.map(function(x){
+      return '<div class="r '+(x.g?'g':'b')+'"><span class="m">'+(x.g?'O':'X')+'</span><span class="t">'+x.t+'</span></div>';
+    }).join('');
+  });
+  document.body.classList.add('graded');
+  var s=$('#scorebox .score .big'); if(s) s.textContent=total+'개 중 '+ok+'개 정답';
+  var last=byId('sc-end');
+  if(last){ last.classList.add('in'); goTo(last); }
+});
+var rbtn=byId('reset');
+if(rbtn) rbtn.addEventListener('click',function(){
+  graded=false; document.body.classList.remove('graded');
+  for(var k in RUN){ RUN[k]=(RUN[k]||0)+1; }
+  clearSel();
+  $$('.card').forEach(function(c){
+    delete c.dataset.bin; c.classList.remove('used','sel'); c.setAttribute('aria-pressed','false');
+    var bank=$('.bank[data-bank="'+c.dataset.ex+'"]'); if(bank) bank.appendChild(c);
+  });
+  $$('.gap').forEach(function(g){ g.dataset.value=''; g.textContent=g.dataset.ph; g.className='gap empty'; });
+  $$('.opt').forEach(function(o){ o.classList.remove('is-answer','is-chosen'); });
+  $$('.opt input').forEach(function(o){ o.checked=false; o.disabled=false; });
+  scenes.forEach(function(sc){ sc.classList.remove('graded','done'); });
+  $$('.rows').forEach(function(r){ r.innerHTML=''; });
+  $$('.log').forEach(function(l){ l.innerHTML='<span class="empty">아직 흘려보내지 않았습니다.</span>'; });
+  $$('.runlayer').forEach(function(l){ l.remove(); });
+  $$('.runbtn').forEach(function(b){ b.disabled=false; b.classList.remove('on'); });
+  $$('.gauge').forEach(function(g){ g.classList.remove('over'); $('.bar i',g).style.width='0%'; $('.now',g).textContent='0건'; });
+  $$('[data-hold]').forEach(function(b){
+    holdStream(byId(b.dataset.hold),false); b.textContent='한 줄 붙잡기'; b.classList.remove('on');
+  });
+  if(window.__GAME_RESET__) window.__GAME_RESET__();
+  var s=$('#scorebox .score .big'); if(s) s.textContent='다시 풀어 보세요';
+  goTop();
+});
+var pbtn=byId('printbtn'); if(pbtn) pbtn.addEventListener('click',function(){ window.print(); });
+mark();
+})();
+
+(function(){
+var $=function(s,r){return (r||document).querySelector(s);};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+var byId=function(i){return document.getElementById(i);};
+function still(){ return document.body.classList.contains('nomo')
+  || window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+
+var GATE_OK=false;
+var RUNNING=false;
+var ALERTS={};     // key -> {label, why, kept:null|true|false}
+var RAN={};        // 시나리오 index -> true (설정을 바꾸면 비운다)
+var SNAP=null;     // 실행 시작 시점의 허용 범위 (끝날 때 이 값을 쓴다)
+var LAST={web:false, admin:false, served:false};
+var TOTAL=4;       // 네 건을 모두 보내야 운영 상태를 판정한다
+
+/* ---------- 자리 놓기 ---------- */
+function cardById(ex,id){ return $('.card[data-ex="'+ex+'"][data-id="'+id+'"]'); }
+function selected(){ return $('.card.sel'); }
+function setSlot(g,id){
+  var c=cardById(g.dataset.ex,id);
+  g.dataset.value=id;
+  $('text.val',g).textContent = c ? c.dataset.label : id;
+  g.classList.add('filled');
+  if(c) c.classList.add('used');
+  syncBtns();
+}
+/* 자리 확인을 통과하면 상자가 장비 그림으로 바뀐다 */
+function liveBoard(on){ $$('.dslot').forEach(function(g){ g.classList.toggle('live',!!on); }); }
+/* 장비의 모습을 상태에 맞춘다 */
+/* 문·차단봉 같은 '움직임' 상태와, 관리 접점 같은 '표시'는 서로 지우지 않는다 */
+var EQCLS=['open','shut','lift','block','scanning','ping-on','filed'];
+var EQMARK=['flag'];
+function eqOf(node){ var g=$('.dslot[data-node="'+node+'"]'); return g? $('.eq',g):null; }
+function eqSet(node,cls){
+  var e=eqOf(node); if(!e) return;
+  if(EQMARK.indexOf(cls)>=0){ e.classList.add(cls); return; }   // 표시는 얹기만 한다
+  EQCLS.forEach(function(c){ e.classList.remove(c); });
+  if(cls) e.classList.add(cls);
+}
+function eqReset(){
+  ['fw','ips','waf','ids','ep','log'].forEach(function(n){
+    var e=eqOf(n); if(!e) return;
+    EQCLS.concat(EQMARK).forEach(function(c){ e.classList.remove(c); });
+  });
+}
+function clearSlot(g){
+  var prev=g.dataset.value;
+  if(prev){ var c=cardById(g.dataset.ex,prev); if(c) c.classList.remove('used'); }
+  g.dataset.value=''; $('text.val',g).textContent=''; g.classList.remove('filled','ok','no');
+  syncBtns();
+}
+function syncBtns(){
+  $$('.pbtn').forEach(function(b){
+    var g=$('.dslot[data-node="'+b.dataset.place+'"]');
+    var pv=$('.pv',b);
+    if(!g||!pv) return;
+    if(g.dataset.value){
+      var c=cardById(g.dataset.ex,g.dataset.value);
+      pv.textContent = c ? c.dataset.label : g.dataset.value;
+      pv.classList.remove('none');
+    } else { pv.textContent='비어 있음'; pv.classList.add('none'); }
+  });
+}
+function place(g){
+  if(document.body.classList.contains('graded')) return;
+  if(RUNNING) return;                       // 실행 중에는 배치를 바꾸지 못한다
+  var sel=selected();
+  if(!sel){ clearSlot(g); resetGate(); return; }   // 비우는 것도 배치 변경이다
+  if(sel.dataset.ex!==g.dataset.ex) return;
+  if(g.dataset.value) clearSlot(g);
+  setSlot(g, sel.dataset.id);
+  sel.classList.remove('sel'); sel.setAttribute('aria-pressed','false');
+  $$('.win,.gap').forEach(function(t){ t.classList.remove('armed'); });
+  resetGate();
+}
+$$('.pbtn').forEach(function(b){
+  b.addEventListener('click',function(e){
+    e.stopPropagation();
+    var g=$('.dslot[data-node="'+b.dataset.place+'"]'); if(g) place(g);
+  });
+});
+document.addEventListener('click',function(e){
+  var g=e.target.closest && e.target.closest('.dslot');
+  if(g){ e.stopPropagation(); place(g); }
+},true);
+
+/* ---------- 자리 확인 관문 ---------- */
+var WHY={
+  fw:'허용한 접점으로 오는 통신만 통과시키는 자리다.',
+  ips:'경로 위에서 의심 통신을 통과 전에 막는 자리다.',
+  waf:'웹 서비스 앞에서 요청의 모양을 확인하는 자리다.',
+  ids:'경로 밖에서 통신을 관찰해 알려주는 자리다. 통신이 이 자리를 지나가지는 않는다.',
+  ep:'기기 안에서 파일과 실행을 살피는 자리다.',
+  log:'기록을 점선으로 전달받아 모으는 자리다.'
+};
+function resetGate(){
+  GATE_OK=false;
+  var gt=$('.gate'); if(!gt) return;
+  gt.classList.remove('pass','hold');
+  $('.msg',gt).textContent='여섯 자리를 채운 뒤 자리 확인을 누르세요.';
+  var ul=$('ul',gt); if(ul) ul.remove();
+  lockRuns(true);
+  liveBoard(false); eqReset();
+  invalidate();
+}
+/* 배치나 허용 범위가 바뀌면 지금까지의 운영 판정은 무효다 */
+function invalidate(){ RAN={}; LAST.served=false; lamps(); }
+function placementOK(){
+  var slots=$$('.dslot');
+  if(!slots.length) return false;
+  return slots.every(function(g){ return g.dataset.value===g.dataset.accept; });
+}
+/* 실행 직전 재검사 — 관문을 통과한 뒤 자리를 바꿔도 막는다 */
+document.addEventListener('click',function(e){
+  var rb=e.target.closest && e.target.closest('.runbtn[data-run]');
+  if(!rb) return;
+  if(GATE_OK && placementOK()) return;
+  e.stopPropagation(); e.preventDefault();
+  GATE_OK=false; lockRuns(true);
+  var gt=$('.gate');
+  if(gt){
+    gt.classList.remove('pass'); gt.classList.add('hold');
+    $('.msg',gt).textContent='자리가 바뀌었습니다. 자리 확인을 다시 누른 뒤 보내세요.';
+  }
+},true);
+function lockRuns(on){
+  $$('.runbtn[data-run]').forEach(function(b){ b.disabled=!!on; });
+}
+var gbtn=byId('gatebtn');
+if(gbtn) gbtn.addEventListener('click',function(){
+  var gt=$('.gate'), slots=$$('.dslot'), bad=[], empty=0;
+  slots.forEach(function(g){
+    g.classList.remove('ok','no');
+    if(!g.dataset.value){ empty++; return; }
+    if(g.dataset.value!==g.dataset.accept){
+      bad.push(g);
+      g.classList.add('no');
+    } else g.classList.add('ok');
+  });
+  var ul=$('ul',gt); if(ul) ul.remove();
+  if(empty){
+    gt.classList.remove('pass');
+    $('.msg',gt).textContent='아직 비어 있는 자리가 '+empty+'개 있습니다.';
+    lockRuns(true); GATE_OK=false; return;
+  }
+  if(bad.length){
+    gt.classList.remove('pass');
+    $('.msg',gt).textContent='자리가 맞지 않는 곳이 '+bad.length+'개 있습니다.';
+    var list=document.createElement('ul');
+    bad.forEach(function(g){
+      var li=document.createElement('li');
+      li.innerHTML='<b></b> — ';
+      $('b',li).textContent=g.dataset.ph;
+      li.appendChild(document.createTextNode(WHY[g.dataset.node]||''));
+      list.appendChild(li);
+    });
+    gt.appendChild(list);
+    lockRuns(true); GATE_OK=false; return;
+  }
+  gt.classList.add('pass');
+  $('.msg',gt).textContent='여섯 자리가 맞습니다. 설비가 자리를 잡았습니다. 이제 통신을 흘려보낼 수 있습니다.';
+  GATE_OK=true; lockRuns(false); liveBoard(true); eqReset();
+});
+
+/* ---------- 확인 목록 ---------- */
+function ckKey(idx,node){ return idx+'|'+node; }
+function addAlert(idx,st,scName){
+  var k=ckKey(idx,st.node);
+  if(ALERTS[k]) return;
+  ALERTS[k]={label:scName, node:st.node, why:st.ckWhy||'', kept:null};
+  renderChecks();
+}
+function renderChecks(focusKey,focusBtn){
+  var box=$('.checks'); if(!box) return;
+  var keys=Object.keys(ALERTS);
+  if(!keys.length){ box.innerHTML='<span class="empty">아직 알림이 없습니다. 통신을 흘려보내면 여기에 쌓입니다.</span>'; lamps(); return; }
+  box.innerHTML='';
+  keys.forEach(function(k){
+    var a=ALERTS[k];
+    var d=document.createElement('div');
+    d.className='ck'+(a.kept===false?' mis':'');
+    d.innerHTML='<div class="what"><b></b> <span class="w2"></span></div>'
+      +'<div class="acts">'
+      +'<button type="button" class="ckbtn keep">확인 대상으로 남긴다</button>'
+      +'<button type="button" class="ckbtn close">조치가 끝났다고 본다</button>'
+      +'</div><p class="fix"></p>';
+    $('b',d).textContent=a.label;
+    $('.w2',d).textContent=a.why;
+    $('.fix',d).textContent='알림은 확인의 시작이지 조치가 아니다. 무슨 일이었는지는 확인한 뒤에 정한다.';
+    var keep=$('.keep',d), close=$('.close',d);
+    keep.setAttribute('aria-pressed', a.kept===true ? 'true':'false');
+    close.setAttribute('aria-pressed', a.kept===false ? 'true':'false');
+    if(a.kept===true) keep.classList.add('on');
+    if(a.kept===false) close.classList.add('warn');
+    keep.addEventListener('click',function(e){ e.stopPropagation(); a.kept=true; renderChecks(k,'keep'); });
+    close.addEventListener('click',function(e){ e.stopPropagation(); a.kept=false; renderChecks(k,'close'); });
+    d.dataset.key=k;
+    box.appendChild(d);
+  });
+  if(focusKey){          // 목록을 다시 그려도 누르던 버튼에 초점을 돌려 둔다
+    var row=$('.ck[data-key="'+focusKey.replace(/"/g,'\\"')+'"]',box);
+    var btn=row && $('.'+(focusBtn||'keep'),row);
+    if(btn) btn.focus();
+  }
+  lamps();
+}
+
+/* ---------- 상태등 ---------- */
+function setLamp(el,state){
+  if(!el) return;
+  el.classList.toggle('on', state==='ok');
+  el.classList.toggle('miss', state==='no');
+  var s=$('.state',el)||$('b',el);
+  if(s) s.textContent = state==='ok' ? '충족' : (state==='no' ? '미충족' : '확인 중');
+}
+function setPair(a,b,state){ setLamp(byId(a),state); setLamp(byId(b),state); }
+function lamps(){
+  var n=[0,1,2,3].filter(function(i){ return RAN[i]; }).length;
+  void n;
+  var ready = (n===TOTAL);          // 네 건을 모두 보내야 판정한다
+  var keys=Object.keys(ALERTS);
+  var kept = keys.length>0 && keys.every(function(k){ return ALERTS[k].kept===true; });
+  setPair('lamp-svc','h-svc',       ready ? (LAST.served ? 'ok':'no') : 'wait');
+  setPair('lamp-narrow','h-narrow', ready ? (LAST.admin ? 'no':'ok')  : 'wait');
+  setPair('lamp-alert','h-alert',   ready ? (kept ? 'ok':'no')        : 'wait');
+  var hr=byId('h-run'); if(hr) hr.textContent=n+' / 4';
+  var left=byId('runsleft');
+  if(left){
+    $('b',left).textContent=n+' / 4';
+    var tail=$('.tail',left);
+    if(tail) tail.textContent = ready
+      ? '네 건을 모두 보냈습니다. 위 세 등이 지금 설정의 결과입니다.'
+      : '네 건을 모두 보내야 운영 상태를 판정합니다. 자리나 허용 범위를 바꾸면 다시 보내야 합니다.';
+  }
+}
+
+/* ---------- 흐름 훅 (scroll_kit runScenario가 부른다) ---------- */
+var EQMAP={
+  fw:{pass:'open', stop:'shut', check:'flag'},
+  ips:{pass:'lift'},
+  waf:{pass:'scanning', stop:'block'},
+  ids:{alert:'ping-on'},
+  ep:{alert:'ping-on'},
+  log:{pass:'filed'}
+};
+function toast(title,text){
+  var box=byId('toasts'); if(!box) return;
+  var d=document.createElement('div'); d.className='toast';
+  d.innerHTML='<b></b><span></span>';
+  $('b',d).textContent=title; $('span',d).textContent=text;
+  box.appendChild(d);
+  setTimeout(function(){ d.classList.add('out');
+    setTimeout(function(){ if(d.parentNode) d.parentNode.removeChild(d); },400); },4200);
+}
+window.__GAME_STEP__=function(idx,st){
+  var m=EQMAP[st.node]; if(m && m[st.v||'pass']) eqSet(st.node, m[st.v||'pass']);
+  if(st.v==='alert'){
+    toast('알림', (st.ckWhy||'')+' 확인 목록에 쌓았습니다.');
+    var names=['A 낯선 첨부','B 느려진 홈페이지','C 열리지 않는 파일','D 예상 밖 결과'];
+    addAlert(idx, st, names[idx]||('시나리오 '+(idx+1)));
+  }
+  if(idx===1 && st.node==='web' && st.v==='pass') LAST.served=true;
+};
+window.__GAME_BEGIN__=function(idx){
+  RUNNING=true; eqReset();
+  var gb=byId('gatebtn'); if(gb) gb.disabled=true;
+  $$('.tg input').forEach(function(t){ t.disabled=true; });   // 실행 중 설정 변경 금지
+  SNAP={ web:!!(byId('tg-web')&&byId('tg-web').checked),
+         admin:!!(byId('tg-admin')&&byId('tg-admin').checked) };
+  if(idx===1) LAST.served=false;
+};
+window.__GAME_DONE__=function(idx){
+  RUNNING=false;
+  var gb=byId('gatebtn'); if(gb) gb.disabled=false;
+  $$('.tg input').forEach(function(t){ t.disabled=false; });
+  RAN[idx]=true;
+  if(SNAP){ LAST.web=SNAP.web; LAST.admin=SNAP.admin; }   // 끝낼 때가 아니라 시작할 때의 설정
+  lamps();
+};
+window.__GAME_MARK__=function(){ syncBtns(); };
+window.__GAME_RESET__=function(){
+  ALERTS={}; RAN={}; SNAP=null; RUNNING=false;
+  LAST={web:false,admin:false,served:false};
+  var gb=byId('gatebtn'); if(gb) gb.disabled=false;
+  $$('.tg input').forEach(function(t){ t.disabled=false; });
+  liveBoard(false); eqReset();
+  var tb=byId('toasts'); if(tb) tb.innerHTML='';
+  $$('.dslot').forEach(function(g){ clearSlot(g); });
+  var w=byId('tg-web'), a=byId('tg-admin');
+  if(w) w.checked=true;
+  if(a) a.checked=false;
+  resetGate(); renderChecks(); syncBtns();
+};
+
+/* 토글을 바꾸면 그 판단으로 다시 흘려보내야 한다 */
+['tg-web','tg-admin'].forEach(function(id){
+  var t=byId(id); if(!t) return;
+  t.addEventListener('change',function(){ invalidate(); });
+});
+
+resetGate(); renderChecks(); syncBtns();
+})();
+</script>
+</body>
+</html>

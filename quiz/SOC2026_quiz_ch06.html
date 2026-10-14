@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 학습 퀴즈 · 6장 로그와 경보를 처음 읽는 법</title>
+<style>
+:root{--g:#B8741A;--dg:#7A4A0E;--sky:#FBF1E3;--red:#E63329;--txt:#111111;--sec:#6E6E6E;--ter:#A3A3A3;--border:#E3E7EC;}
+*{box-sizing:border-box}
+body{margin:0;background:#F6F7F9;color:var(--txt);font-family:"Pretendard","Pretendard Variable","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;font-size:16px;line-height:1.5}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 64px}
+header{background:var(--dg);color:#fff;border-radius:12px;padding:32px 32px 28px;margin-bottom:24px}
+.kicker{font-size:12px;letter-spacing:.08em;font-weight:700;opacity:.8;margin:0 0 14px}
+.accent{width:48px;height:4px;background:var(--red);margin:0 0 18px}
+header h1{font-size:26px;line-height:1.3;margin:0 0 10px;font-weight:700}
+header h1 small{display:block;font-size:14px;font-weight:700;opacity:.85;margin-bottom:6px}
+header p{margin:0;opacity:.9;font-size:15px}
+.q{background:#fff;border-radius:10px;padding:22px 24px;margin:0 0 16px;border:1px solid var(--border)}
+.q h2{font-size:18px;margin:0 0 14px;line-height:1.45}
+.q h2 .n{display:inline-block;min-width:34px;height:34px;line-height:34px;text-align:center;border-radius:17px;background:var(--g);color:#fff;font-size:15px;margin-right:10px}
+.opt{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;margin:8px 0;cursor:pointer}
+.opt:hover{background:var(--sky)}
+.opt input{margin-top:4px;accent-color:var(--g)}
+.opt .mark{font-weight:700;color:var(--g);min-width:20px}
+.q.graded .opt{cursor:default}
+.q.graded .opt.is-answer{border-color:var(--g);background:var(--sky)}
+.q.graded .opt.is-chosen:not(.is-answer){border-style:dashed;border-color:var(--sec)}
+.ctx{background:#F6F7F9;border-left:4px solid var(--g);border-radius:6px;padding:10px 14px;margin:0 0 12px;font-size:15px}
+.ctx p{margin:4px 0}
+#result{display:none;background:#fff;border:2px solid var(--g);border-radius:10px;padding:16px 20px;margin:0 0 20px;align-items:center;gap:16px;flex-wrap:wrap}
+#result:focus{outline:3px solid var(--sky)}
+#result b{font-size:18px;color:var(--g)}
+.verdict{display:none;margin:14px 0 0;padding:14px 16px;border-radius:8px;background:var(--sky);font-size:15px}
+.q.graded .verdict{display:block}
+.verdict b{color:var(--g)}
+.verdict .basis{color:var(--sec);font-size:13px;margin-top:6px}
+.tag{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:10px;border:1.5px solid var(--g);color:var(--g);margin-right:8px;vertical-align:middle}
+.tag.miss{border-color:var(--sec);color:var(--sec)}
+.bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:20px 0}
+button{font:inherit;font-weight:700;border:0;border-radius:8px;padding:12px 22px;cursor:pointer}
+#grade{background:var(--g);color:#fff}
+#reset{background:#fff;color:var(--g);border:1.5px solid var(--g)}
+nav{display:flex;justify-content:space-between;gap:12px;margin-top:28px;font-size:14px}
+nav a{color:var(--g);font-weight:700;text-decoration:none}
+nav a:hover{text-decoration:underline}
+footer{margin-top:22px;color:var(--ter);font-size:12px;letter-spacing:.06em;font-weight:700;text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <p class="kicker">SOC 2026 · 보안관제 입문 · 학습 퀴즈 · 1일-⑥</p>
+  <div class="accent"></div>
+  <h1><small>CHAPTER 06</small>로그와 경보를 처음 읽는 법</h1>
+  <p>이 장에서 배운 것 5가지를 묻습니다. 문항마다 보기 하나를 고른 뒤 아래 <b>채점</b>을 누르세요. 채점 뒤에 정답과 한 줄 해설이 열립니다.</p>
+</header>
+<div id="result" tabindex="-1" role="status" aria-live="polite"><b id="score"></b><span>문항마다 정답과 해설이 열렸습니다. 아래에서 확인하세요.</span><button id="reset" type="button">다시 풀기</button></div>
+<form id="quiz" onsubmit="return false"><section class="q" id="q1"><h2><span class="n">Q1</span>「활동 기록과 알림은 다르다」에서 6장이 나눈 세 가지에 대한 설명으로 옳은 것은?</h2><label class="opt"><input type="radio" name="q1" value="0"><span class="mark">①</span><span>활동이란 정해진 조건에 걸린 기록을 사람에게 알리는 신호다</span></label><label class="opt"><input type="radio" name="q1" value="1"><span class="mark">②</span><span>기록이란 이용자와 시스템이 한 일 그 자체를 가리킨다</span></label><label class="opt"><input type="radio" name="q1" value="2"><span class="mark">③</span><span>알림이란 정해진 조건에 걸린 기록을 사람에게 알리는 신호다</span></label><label class="opt"><input type="radio" name="q1" value="3"><span class="mark">④</span><span>이용자와 시스템이 한 활동은 빠짐없이 모두 기록으로 남는다</span></label><div class="verdict"></div></section><section class="q" id="q2"><h2><span class="n">Q2</span>기록 한 건을 읽을 때 던지는 「다섯 질문」으로 옳은 것은?</h2><label class="opt"><input type="radio" name="q2" value="0"><span class="mark">①</span><span>누가 · 왜 · 어떻게 · 얼마나 · 언제까지</span></label><label class="opt"><input type="radio" name="q2" value="1"><span class="mark">②</span><span>언제 · 어디서 · 누가 · 무엇을 · 결과는</span></label><label class="opt"><input type="radio" name="q2" value="2"><span class="mark">③</span><span>원인 · 피해 · 조치 · 보고 · 재발 방지</span></label><label class="opt"><input type="radio" name="q2" value="3"><span class="mark">④</span><span>대상 · 시각 · 영향 · 담당 · 판단</span></label><div class="verdict"></div></section><section class="q" id="q3"><h2><span class="n">Q3</span>「오탐」의 뜻으로 옳은 것은?</h2><label class="opt"><input type="radio" name="q3" value="0"><span class="mark">①</span><span>공격을 놓친 경우</span></label><label class="opt"><input type="radio" name="q3" value="1"><span class="mark">②</span><span>정상 업무가 경보로 잡히는 경우</span></label><label class="opt"><input type="radio" name="q3" value="2"><span class="mark">③</span><span>장비가 고장 난 경우</span></label><label class="opt"><input type="radio" name="q3" value="3"><span class="mark">④</span><span>기록이 남지 않은 경우</span></label><div class="verdict"></div></section><section class="q" id="q4"><h2><span class="n">Q4</span>접속 위치만 &quot;사내 PC&quot;와 &quot;외부&quot;로 다른 두 실패 기록을 보고 옳게 말한 것은?</h2><label class="opt"><input type="radio" name="q4" value="0"><span class="mark">①</span><span>같은 사람이 이어서 시도한 것이다</span></label><label class="opt"><input type="radio" name="q4" value="1"><span class="mark">②</span><span>외부에서 온 것은 곧 공격이다</span></label><label class="opt"><input type="radio" name="q4" value="2"><span class="mark">③</span><span>결과는 같지만 어디서 왔는지가 뜻을 바꾸며, 같은 사람인지 이어진 일인지는 표만으로 알 수 없다</span></label><label class="opt"><input type="radio" name="q4" value="3"><span class="mark">④</span><span>두 기록은 하나의 사건이다</span></label><div class="verdict"></div></section><section class="q" id="q5"><h2><span class="n">Q5</span>다음 통보와 함께 확인한 참고 기록을 본 뒤에도 &quot;아직 모르는 것&quot;에 해당하는 것은?  〔지문〕 통보 — 업무 포털에서 로그인 실패가 여러 번 기록되었습니다. 확인을 요청합니다. / 함께 확인한 참고 기록 — 2026-03-10 09:10 · 접속 위치 외부 · 교육계정01 · 업무 포털 · 로그인 · 실패</h2><label class="opt"><input type="radio" name="q5" value="0"><span class="mark">①</span><span>대상 서비스가 업무 포털이라는 것</span></label><label class="opt"><input type="radio" name="q5" value="1"><span class="mark">②</span><span>로그인 실패가 기록된 것</span></label><label class="opt"><input type="radio" name="q5" value="2"><span class="mark">③</span><span>접속 위치가 외부라는 것</span></label><label class="opt"><input type="radio" name="q5" value="3"><span class="mark">④</span><span>누가 시도했는지</span></label><div class="verdict"></div></section></form>
+<div class="bar">
+  <button id="grade" type="button">채점</button>
+</div>
+<nav>
+<span><a href="SOC2026_quiz_ch05.html">← 이전 장 5장 보안장비와 보호조치는 어디서 무엇을 하는가</a></span>
+<span><a href="SOC2026_quiz_ch07.html">다음 장 7장 경보를 받았을 때 확인·연락·대응·보고 →</a></span>
+</nav>
+<footer>SOC 2026 · 보안관제 입문</footer>
+</div>
+<script>
+const DATA=[{"opts": ["활동이란 정해진 조건에 걸린 기록을 사람에게 알리는 신호다", "기록이란 이용자와 시스템이 한 일 그 자체를 가리킨다", "알림이란 정해진 조건에 걸린 기록을 사람에게 알리는 신호다", "이용자와 시스템이 한 활동은 빠짐없이 모두 기록으로 남는다"], "ans": 2, "basis": "현행 6장 56쪽 · RFCH06-002", "expl": "활동은 이용자와 시스템이 한 일, 기록은 그 일 가운데 남긴 흔적, 알림은 정해진 조건에 걸린 기록을 사람에게 알리는 신호다. 남지 않는 활동도 있다."}, {"opts": ["누가 · 왜 · 어떻게 · 얼마나 · 언제까지", "언제 · 어디서 · 누가 · 무엇을 · 결과는", "원인 · 피해 · 조치 · 보고 · 재발 방지", "대상 · 시각 · 영향 · 담당 · 판단"], "ans": 1, "basis": "현행 6장 57쪽 · RFCH06-003", "expl": "언제(날짜·시간), 어디서(접속 위치), 누가(사용한 계정), 무엇을(대상·행위), 결과는(성공·실패)."}, {"opts": ["공격을 놓친 경우", "정상 업무가 경보로 잡히는 경우", "장비가 고장 난 경우", "기록이 남지 않은 경우"], "ans": 1, "basis": "현행 6장 60쪽 · RFCH06-006", "expl": "오탐인지 아닌지는 확인한 뒤에 정해진다."}, {"opts": ["같은 사람이 이어서 시도한 것이다", "외부에서 온 것은 곧 공격이다", "결과는 같지만 어디서 왔는지가 뜻을 바꾸며, 같은 사람인지 이어진 일인지는 표만으로 알 수 없다", "두 기록은 하나의 사건이다"], "ans": 2, "basis": "현행 6장 59쪽 · RFCH06-005", "expl": "다른 것은 접속 위치 하나다."}, {"opts": ["대상 서비스가 업무 포털이라는 것", "로그인 실패가 기록된 것", "접속 위치가 외부라는 것", "누가 시도했는지"], "ans": 3, "basis": "현행 6장 62쪽 · RFCH06-008", "expl": "①~③은 통보와 참고 기록에 적힌 사실이다. 누가 시도했는지는 62쪽 화면이 「아직 모르는 것」으로 든 항목이며, 사실과 미확인을 나눠 전달하면 다음 담당이 바로 확인을 시작할 수 있다."}];
+const MARK=["①","②","③","④","⑤"];
+const form=document.getElementById("quiz"), grade=document.getElementById("grade"), reset=document.getElementById("reset"), score=document.getElementById("score"), result=document.getElementById("result");
+grade.addEventListener("click",()=>{
+  let ok=0;
+  DATA.forEach((q,i)=>{
+    const box=document.getElementById("q"+(i+1));
+    const chosen=form.querySelector('input[name="q'+(i+1)+'"]:checked');
+    const c=chosen?parseInt(chosen.value,10):-1;
+    box.querySelectorAll(".opt").forEach((el,k)=>{
+      el.classList.toggle("is-answer",k===q.ans);
+      el.classList.toggle("is-chosen",k===c);
+      el.querySelector("input").disabled=true;
+    });
+    const v=box.querySelector(".verdict");
+    let tag;
+    if(c===q.ans){ok++;tag='<span class="tag">정답</span>';}
+    else if(c<0){tag='<span class="tag miss">미응답</span>';}
+    else{tag='<span class="tag miss">오답</span>';}
+    v.innerHTML=tag+'정답은 <b>'+MARK[q.ans]+' '+q.opts[q.ans]+'</b><div style="margin-top:6px">'+q.expl+'</div><div class="basis">근거 · '+q.basis+'</div>';
+    box.classList.add("graded");
+  });
+  score.textContent=DATA.length+"문항 중 "+ok+"개 정답";
+  result.style.display="flex"; grade.style.display="none";
+  result.scrollIntoView({behavior:"smooth",block:"start"}); result.focus({preventScroll:true});
+});
+reset.addEventListener("click",()=>{
+  form.reset();
+  document.querySelectorAll(".q").forEach(b=>{b.classList.remove("graded");b.querySelectorAll(".opt").forEach(el=>{el.classList.remove("is-answer","is-chosen");el.querySelector("input").disabled=false;});b.querySelector(".verdict").innerHTML="";});
+  result.style.display="none"; grade.style.display="inline-block"; window.scrollTo({top:0,behavior:"smooth"});
+});
+</script>
+</body>
+</html>

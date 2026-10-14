@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 실습(스크롤) · 6장 로그와 경보를 처음 읽는 법</title>
+<style>
+:root{--acc:#B8741A;--acclt:#CE821D;--deep:#7A4A0E;--pale:#FBF1E3;--bg:#16100A;--red:#E63329;
+      --ink:#FFFFFF;--mut:rgba(255,255,255,.82);--dim:rgba(255,255,255,.66);
+      --line:rgba(255,255,255,.22);--panel:rgba(255,255,255,.055)}
+*{box-sizing:border-box}
+@media (prefers-reduced-motion: no-preference){html{scroll-behavior:smooth}}
+html.nomo{scroll-behavior:auto}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font-family:"Pretendard","Pretendard Variable","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  font-size:16px;line-height:1.62;-webkit-text-size-adjust:100%;overflow-x:hidden}
+svg.sprite{display:none}
+.ic{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-.13em}
+
+/* ---------- 고정 장치 ---------- */
+.topbar{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.08);z-index:60}
+.topbar i{display:block;height:100%;width:0;background:var(--acc)}
+.rail{position:fixed;right:20px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:11px;z-index:55}
+.rail button{width:11px;height:11px;padding:0;border-radius:50%;border:1.5px solid rgba(255,255,255,.38);background:transparent;cursor:pointer}
+.rail button.on{background:var(--acc);border-color:var(--acc);transform:scale(1.3)}
+.rail button:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.motionbtn{position:fixed;left:18px;bottom:18px;z-index:55;border:1.5px solid var(--line);background:rgba(0,0,0,.42);
+  color:var(--mut);border-radius:20px;padding:7px 14px;font-size:12.5px;font-weight:700;cursor:pointer}
+.motionbtn:hover{color:#fff;border-color:var(--acclt)}
+@media(max-width:820px){.rail{display:none}}
+
+/* ---------- 장면 ---------- */
+.scene{position:relative;min-height:100svh;display:flex;flex-direction:column;justify-content:center;
+  padding:88px clamp(18px,5vw,56px);overflow:hidden}
+.scene+.scene{border-top:1px solid rgba(255,255,255,.07)}
+.scene.alt{background:rgba(255,255,255,.03)}
+.scene>.inner{width:100%;max-width:1060px;margin:0 auto;position:relative;z-index:2}
+.bignum{position:absolute;right:3%;top:5%;z-index:1;pointer-events:none;user-select:none;
+  font-size:clamp(88px,20vw,240px);font-weight:800;line-height:.9;color:rgba(255,255,255,.045)}
+.kicker{font-size:11.5px;letter-spacing:.11em;font-weight:700;color:var(--mut);margin:0 0 12px}
+.accent{width:48px;height:4px;background:var(--red);margin:0 0 18px}
+h1{font-size:clamp(30px,6.2vw,58px);line-height:1.16;margin:0 0 18px;font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(22px,3.6vw,34px);line-height:1.25;margin:0 0 10px;font-weight:800;letter-spacing:-.015em}
+.lead{font-size:clamp(15px,1.9vw,18.5px);color:var(--mut);margin:0 0 6px;max-width:62ch}
+.step{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.06em;
+  color:var(--acclt);border:1.5px solid var(--acclt);border-radius:20px;padding:4px 14px;margin:0 0 16px}
+.hint{color:var(--mut);font-size:14.5px;margin:10px 0 20px;max-width:70ch}
+.down{margin-top:34px;display:inline-flex;align-items:center;gap:9px;color:var(--mut);font-size:13px;font-weight:700}
+.down i{display:block;width:1px;height:34px;background:linear-gradient(var(--acc),transparent);animation:sink 1.9s ease-in-out infinite}
+@keyframes sink{0%,100%{opacity:.3;transform:translateY(-5px)}50%{opacity:1;transform:translateY(5px)}}
+.metas{display:flex;gap:9px;flex-wrap:wrap;margin-top:22px}
+.meta{border:1px solid var(--line);border-radius:16px;padding:4px 13px;font-size:12px;font-weight:700;color:var(--mut)}
+
+/* 표지 기하 도형 */
+.geo{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.geo i{position:absolute;display:block;border:1.5px solid rgba(255,255,255,.11);border-radius:50%}
+.geo i.sq{border-radius:10px}
+.geo i.fl{background:var(--deep);border-color:transparent;opacity:.6}
+.geo i.ac{border-color:var(--acc);opacity:.5}
+@keyframes drift{0%,100%{transform:translate3d(0,0,0) rotate(0)}50%{transform:translate3d(0,-30px,0) rotate(6deg)}}
+
+/* ---------- 등장 ---------- */
+.rv{opacity:0;transform:translateY(28px);
+  transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1);transition-delay:var(--d,0s)}
+.scene.in .rv{opacity:1;transform:none}
+.stage svg path.dr{stroke-dasharray:var(--L,600);stroke-dashoffset:var(--L,600);transition:stroke-dashoffset 1.15s ease .25s}
+.scene.in .stage svg path.dr{stroke-dashoffset:0}
+.stage svg g.node{opacity:0;transition:opacity .55s ease;transition-delay:var(--d,0s)}
+.scene.in .stage svg g.node{opacity:1}
+
+/* ---------- 무대(SVG) ---------- */
+.stage{margin:8px 0 18px;border:1px solid var(--line);border-radius:16px;background:rgba(0,0,0,.22);padding:10px}
+.stage svg{display:block;width:100%;height:auto}
+.zone{fill:rgba(255,255,255,.035);stroke:var(--line);stroke-dasharray:5 5}
+.zlabel{fill:var(--dim);font-size:12px;font-weight:700}
+.link{stroke:rgba(255,255,255,.3);stroke-width:2;fill:none}
+.link.dash{stroke-dasharray:7 6;stroke:var(--acc);opacity:.75}
+.nodec{fill:var(--deep);stroke:var(--acc);stroke-width:2}
+.nodet{fill:var(--ink);font-size:13.5px;font-weight:700;text-anchor:middle}
+.nodesub{fill:var(--dim);font-size:11.5px;text-anchor:middle}
+.dot{fill:var(--acc);stroke:#fff;stroke-width:2}
+.stage .cap{fill:var(--dim);font-size:11.5px}
+
+/* ---------- 카드 ---------- */
+.bank{display:flex;flex-wrap:wrap;gap:9px;margin:0 0 16px;min-height:52px;padding:11px;
+  border:1.5px dashed var(--line);border-radius:14px;background:rgba(0,0,0,.18)}
+.bank:empty::after{content:"카드를 모두 놓았습니다";color:var(--dim);font-size:13px}
+.card{display:inline-flex;align-items:center;gap:7px;border:1.5px solid rgba(255,255,255,.34);border-radius:22px;
+  padding:8px 16px;background:rgba(255,255,255,.07);color:var(--ink);font-weight:700;font-size:14.5px;
+  font-family:inherit;cursor:pointer;transition:transform .2s,background .2s,border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--acclt);background:rgba(255,255,255,.12)}
+.card.sel{background:var(--deep);border-color:var(--acclt);box-shadow:0 6px 22px rgba(0,0,0,.42);transform:translateY(-2px)}
+.card.flying{transition:transform .42s cubic-bezier(.2,.8,.25,1)}
+.card:focus-visible,.dropbtn:focus-visible,.gap:focus-visible,.runbtn:focus-visible,.main:focus-visible,.ghost:focus-visible{outline:3px solid var(--acc);outline-offset:3px}
+.card .ic{opacity:.85}
+.card.used{opacity:.34}
+body.graded .card{cursor:default}
+
+/* ---------- 놓는 자리 ---------- */
+.wins{display:grid;gap:14px;margin:0 0 16px}
+.wins.c2{grid-template-columns:repeat(2,1fr)}
+.wins.c3{grid-template-columns:repeat(3,1fr)}
+.wins.c4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:860px){.wins.c3,.wins.c4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.wins.c2,.wins.c3,.wins.c4{grid-template-columns:1fr}}
+.win{border:1.5px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:13px;
+  display:flex;flex-direction:column;gap:9px;min-height:132px;transition:border-color .2s,background .2s}
+.win.armed{border-color:var(--acclt);background:rgba(255,255,255,.07)}
+.win .dropbtn{display:block;width:100%;text-align:left;border:0;background:transparent;color:inherit;font:inherit;padding:0;cursor:pointer}
+.win h3{margin:0;font-size:14.5px;font-weight:800}
+.win .sub{margin:2px 0 0;font-size:12px;color:var(--dim);line-height:1.45}
+.win .hold{display:flex;flex-wrap:wrap;gap:7px;min-height:34px;align-content:flex-start}
+.win .hold:empty::after{content:"비어 있음";color:var(--dim);font-size:12.5px}
+.win .hold .card{font-size:13.5px;padding:6px 13px}
+
+/* ---------- 문장 빈칸 ---------- */
+.sent{font-size:clamp(16px,2.2vw,20px);line-height:2.5;margin:0 0 14px;font-weight:600}
+.gap{display:inline-flex;align-items:center;justify-content:center;min-width:132px;min-height:40px;
+  border:2px dashed var(--acclt);border-radius:10px;padding:2px 13px;margin:0 4px;vertical-align:middle;
+  background:rgba(255,255,255,.06);color:var(--ink);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.gap.filled{border-style:solid;background:var(--deep)}
+.gap.empty{color:var(--dim)}
+.gap.ok{border-color:#7BD88F}
+.gap.no{border-color:#FFB4A2}
+
+/* ---------- 흐름 실행 ---------- */
+.runrow{display:flex;gap:9px;flex-wrap:wrap;align-items:center;margin:0 0 14px}
+.runrow .lbl{font-size:13px;font-weight:800;color:var(--mut);letter-spacing:.04em}
+.runbtn{border:1.5px solid var(--acclt);background:transparent;color:var(--ink);border-radius:22px;
+  padding:9px 18px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:background .2s}
+.runbtn:hover{background:rgba(255,255,255,.1)}
+.runbtn[disabled]{opacity:.42;cursor:default}
+.runbtn.on{background:var(--deep);border-color:var(--acclt)}
+.log{border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.26);padding:6px 4px;margin:0 0 6px;min-height:56px}
+.log .empty{display:block;padding:12px 14px;color:var(--dim);font-size:13.5px}
+.log .li{display:flex;gap:11px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.07);
+  font-size:14.5px;opacity:0;transform:translateX(-10px);animation:slidein .45s forwards}
+.log .li:last-child{border-bottom:0}
+@keyframes slidein{to{opacity:1;transform:none}}
+.log .tag{flex:0 0 auto;min-width:66px;text-align:center;border-radius:12px;padding:2px 10px;font-size:12px;font-weight:800;align-self:flex-start}
+.t-pass{background:rgba(123,216,143,.16);color:#9BE3AC;border:1px solid rgba(123,216,143,.4)}
+.t-stop{background:rgba(255,180,162,.14);color:#FFC2B2;border:1px solid rgba(255,180,162,.4)}
+.t-odd{background:rgba(255,214,120,.14);color:#FFDE95;border:1px solid rgba(255,214,120,.42)}
+.t-alert{background:rgba(160,196,255,.14);color:#B7D0FF;border:1px solid rgba(160,196,255,.42)}
+.t-hold{background:rgba(255,255,255,.1);color:#E6E6E6;border:1px solid rgba(255,255,255,.3)}
+.log .tx{color:var(--mut);line-height:1.55}
+
+/* ---------- 처리 여력 ---------- */
+.gauge{margin:0 0 14px}
+.gauge .bar{height:16px;border-radius:9px;background:rgba(255,255,255,.1);overflow:hidden;border:1px solid var(--line)}
+.gauge .bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .5s ease}
+.gauge.over .bar i{background:#FFB4A2}
+.gauge .cap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12.5px;color:var(--dim);margin-top:6px;font-weight:700}
+
+/* ---------- 흐르는 기록 ---------- */
+.stream{position:relative;height:196px;overflow:hidden;border:1px solid var(--line);border-radius:14px;
+  background:rgba(0,0,0,.28);margin:0 0 14px}
+.stream .roll{position:absolute;left:0;right:0;top:0;animation:roll 18s linear infinite}
+.stream.hold .roll{animation-play-state:paused}
+@keyframes roll{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.stream .row{display:grid;grid-template-columns:136px 1fr 112px 92px;gap:10px;padding:9px 15px;
+  font-size:13.5px;color:var(--mut);border-bottom:1px solid rgba(255,255,255,.06);white-space:nowrap}
+.stream .row.blank span{display:block;height:9px;border-radius:5px;background:rgba(255,255,255,.14)}
+.stream .row.blank span:nth-child(2){background:rgba(255,255,255,.10)}
+.stream .row.blank span:nth-child(3){width:64%;background:rgba(255,255,255,.09)}
+.stream .row.blank span:nth-child(4){width:48%;background:rgba(255,255,255,.09)}
+.stream .row.pick{color:var(--ink);background:rgba(255,255,255,.1);font-weight:700;box-shadow:inset 3px 0 0 var(--acc)}
+@media(max-width:620px){.stream .row{grid-template-columns:106px 1fr;gap:14px;font-size:12.5px}.stream .row span:nth-child(n+3){display:none}}
+.picked{display:none;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:9px;margin:0 0 16px}
+.picked .cell{border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.05);padding:9px 12px}
+.picked .cell .k{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:.04em}
+.picked .cell .v{font-size:14.5px;font-weight:800;margin-top:2px}
+
+/* ---------- 선택 문항 ---------- */
+.qs{border:1px solid var(--line);border-radius:14px;background:rgba(0,0,0,.2);padding:15px 17px;margin:0 0 14px}
+.qs .qq{font-size:15.5px;font-weight:700;margin:0 0 11px}
+.opt{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1.5px solid var(--line);border-radius:11px;
+  margin:0 0 7px;cursor:pointer;font-size:14.5px;transition:border-color .18s,background .18s}
+.opt:hover{border-color:var(--acclt)}
+.opt:focus-within{outline:3px solid var(--acc);outline-offset:2px}
+.opt input{accent-color:var(--acc);width:17px;height:17px;flex:0 0 auto}
+.opt.is-answer{border-color:#7BD88F;background:rgba(123,216,143,.1)}
+.opt.is-chosen{font-weight:800}
+
+/* ---------- 채점 ---------- */
+.ctx{border-left:3px solid var(--acclt);background:rgba(255,255,255,.05);border-radius:0 11px 11px 0;
+  padding:12px 16px;margin:0 0 16px;font-size:14.5px}
+.ctx p{margin:4px 0;color:var(--mut)}
+.ctx b{color:var(--ink)}
+.expl{display:none;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.05);padding:15px 18px;margin:14px 0 0}
+.scene.graded .expl{display:block}
+.expl .ttl{font-size:12px;font-weight:800;letter-spacing:.07em;color:var(--acclt);margin:0 0 7px}
+.expl p{margin:0 0 9px;font-size:14.5px;color:var(--mut);line-height:1.65}
+.expl .basis{font-size:12px;color:var(--dim);margin:0}
+.rows{margin:10px 0 0}
+.rows:not(:empty){border-top:1px solid rgba(255,255,255,.1)}
+.rows .r{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13.5px;align-items:flex-start}
+.rows .r .m{flex:0 0 auto;width:20px;font-weight:800}
+.rows .r.g .m{color:#9BE3AC}
+.rows .r.b .m{color:#FFC2B2}
+.rows .r .t{color:var(--mut)}
+.rows .r .t b{color:var(--ink)}
+.disc{font-size:12.5px;color:var(--dim);margin:0 0 16px;border-left:2px solid var(--line);padding-left:10px}
+.gradebar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin:26px 0 0}
+.main{border:2px solid var(--acclt);background:var(--deep);color:#fff;border-radius:26px;padding:14px 32px;font:inherit;font-size:16px;font-weight:800;cursor:pointer;
+  box-shadow:0 10px 30px rgba(0,0,0,.4)}
+.main:hover{filter:brightness(1.1)}
+.ghost{border:1.5px solid var(--line);background:transparent;color:var(--mut);border-radius:24px;padding:11px 22px;font:inherit;font-size:14px;font-weight:700;cursor:pointer}
+.ghost:hover{color:#fff;border-color:var(--acclt)}
+.score{font-size:clamp(26px,5vw,46px);font-weight:800;margin:0 0 10px}
+.score small{display:block;font-size:15px;font-weight:600;color:var(--mut);margin-top:8px}
+nav.end{display:flex;gap:16px;flex-wrap:wrap;margin:28px 0 0}
+nav.end a{color:var(--acclt);font-weight:700;font-size:14.5px;text-decoration:none;border-bottom:1px solid transparent}
+nav.end a:hover{border-bottom-color:var(--acclt)}
+nav.end .dimx{color:var(--dim);font-size:14.5px}
+footer{padding:30px 24px 60px;text-align:center;color:var(--dim);font-size:12.5px}
+
+/* ---------- 움직임 줄이기 ---------- */
+body.nomo *,body.nomo *::before,body.nomo *::after{animation:none!important;transition:none!important}
+body.nomo .rv{opacity:1;transform:none}
+body.nomo .stage svg path.dr{stroke-dashoffset:0}
+body.nomo .stage svg g.node{opacity:1}
+body.nomo .log .li{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+  .stage svg path.dr{stroke-dashoffset:0}
+  .stage svg g.node{opacity:1}
+  .log .li{opacity:1;transform:none}
+}
+/* ---------- 인쇄 ---------- */
+@media print{
+  body{background:#fff;color:#000}
+  .topbar,.rail,.motionbtn,.down,.bignum,.geo,.gradebar{display:none!important}
+  .scene{min-height:0;padding:14px 0;page-break-inside:avoid;border-top:1px solid #ccc}
+  .rv{opacity:1;transform:none}
+  h1,h2,.score{color:#000}
+  .lead,.hint,.ctx p,.expl p,.rows .r .t,.gauge .cap,.picked .cell .k{color:#333}
+  .stage,.log,.win,.qs,.bank,.expl,.stream,.picked .cell{background:#fff;border-color:#999}
+  .card,.gap{background:#fff;color:#000;border-color:#666}
+  .expl{display:block}
+  .stream{height:auto;overflow:visible}.stream .roll{position:static;animation:none}
+  .nodec{fill:#fff;stroke:#333}.nodet{fill:#000}.nodesub{fill:#555}.link{stroke:#777}.zone{fill:#f4f4f4;stroke:#bbb}.zlabel{fill:#666}
+}
+</style>
+</head>
+<body>
+<div class="topbar" aria-hidden="true"><i></i></div>
+<div class="rail" role="navigation" aria-label="장면 이동"><button type="button" aria-label="1번째 장면으로"></button><button type="button" aria-label="2번째 장면으로"></button><button type="button" aria-label="3번째 장면으로"></button><button type="button" aria-label="4번째 장면으로"></button><button type="button" aria-label="5번째 장면으로"></button></div>
+<button type="button" class="motionbtn" aria-pressed="false">움직임 끄기</button>
+<section class="scene" id="sc-cover"><div class="geo" aria-hidden="true"><i style="width:340px;height:340px;left:-70px;top:8%;animation:drift 13s ease-in-out infinite"></i><i class="ac" style="width:190px;height:190px;right:12%;top:14%;animation:drift 17s ease-in-out infinite .6s"></i><i class="sq fl" style="width:230px;height:230px;right:-50px;bottom:6%;animation:drift 15s ease-in-out infinite 1.2s"></i><i class="sq" style="width:120px;height:120px;left:26%;bottom:12%;animation:drift 11s ease-in-out infinite .3s"></i><i class="ac" style="width:64px;height:64px;left:52%;top:22%;animation:drift 9s ease-in-out infinite .9s"></i></div><div class="inner"><p class="kicker rv">SOC 2026 · 보안관제 입문 · 실습 · 1일-⑥</p><div class="accent rv"></div><h1 class="rv">로그와 경보를 처음 읽는 법</h1><p class="lead rv">흐르는 기록에서 한 줄을 붙잡아 문장으로 만들고, 통보에서 전달할 내용을 나누고, 두 상황이 갈리는 열을 찾습니다.</p><div class="metas rv"><span class="meta">3개 장면</span><span class="meta">강의 문안 기반</span><span class="meta">저장 없음</span><span class="meta">스크롤로 진행</span></div><p class="down rv"><i></i>아래로 내려가며 하나씩 해 보세요</p></div></section>
+<section class="scene" id="sc06-1" data-ex="a"><div class="bignum" aria-hidden="true">01</div><div class="inner"><span class="step rv">장면 1</span><h2 class="rv">흐르는 기록에서 한 줄을 붙잡는다</h2><p class="hint rv">기록은 계속 쌓입니다. 이 실습에서 읽는 것은 강조된 한 줄뿐입니다. 그 줄을 붙잡아 여섯 칸으로 펼친 뒤, 카드를 문장의 빈칸에 넣으세요.</p><p class="disc rv">교육용 합성 기록 · 실제 제품의 원시 로그·탐지 조건이 아님. 읽을 값이 있는 줄은 강조된 한 줄뿐이며, 나머지 선에는 값이 없다</p><div class="stream rv" role="img" aria-label="기록이 계속 쌓이는 모습. 이 실습에서 읽는 기록은 강조된 한 줄이다"><div class="roll"><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row pick"><span>2026-03-10 09:10</span><span>교육계정01 · 업무 포털 로그인</span><span>사내 PC</span><span>실패</span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row pick"><span>2026-03-10 09:10</span><span>교육계정01 · 업무 포털 로그인</span><span>사내 PC</span><span>실패</span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div><div class="row blank" aria-hidden="true"><span></span><span></span><span></span><span></span></div></div></div><div class="runrow rv"><button type="button" class="runbtn" data-hold="sc06-1">한 줄 붙잡기</button><span class="lbl">멈추면 그 한 줄이 여섯 칸으로 펼쳐집니다</span></div><div class="picked"><div class="cell"><div class="k">날짜·시간(KST)</div><div class="v">2026-03-10 09:10</div></div><div class="cell"><div class="k">접속 위치</div><div class="v">사내 PC</div></div><div class="cell"><div class="k">사용한 계정</div><div class="v">교육계정01</div></div><div class="cell"><div class="k">대상</div><div class="v">업무 포털</div></div><div class="cell"><div class="k">행위</div><div class="v">로그인</div></div><div class="cell"><div class="k">결과</div><div class="v">실패</div></div></div><div class="bank rv" data-bank="a"><button type="button" class="card" data-ex="a" data-id="t" data-label="2026-03-10 09:10" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+  <path d="M12 7v5l3 3" /></svg>2026-03-10 09:10</button><button type="button" class="card" data-ex="a" data-id="p" data-label="사내 PC" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5a1 1 0 0 1 1 -1h16a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-16a1 1 0 0 1 -1 -1v-10" />
+  <path d="M7 20h10" />
+  <path d="M9 16v4" />
+  <path d="M15 16v4" /></svg>사내 PC</button><button type="button" class="card" data-ex="a" data-id="acc" data-label="교육계정01" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>교육계정01</button><button type="button" class="card" data-ex="a" data-id="what" data-label="업무 포털 로그인" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16" />
+  <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" />
+  <path d="M8 4v4" /></svg>업무 포털 로그인</button><button type="button" class="card" data-ex="a" data-id="res" data-label="실패" aria-pressed="false"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M12 3v18" />
+  <path d="M12 14l7 -7" />
+  <path d="M12 19l8.5 -8.5" />
+  <path d="M12 9l4.5 -4.5" /></svg>실패</button></div><p class="sent rv"><button type="button" class="gap empty" data-ex="a" data-ph="①" data-name="① 언제(날짜·시간)" data-accept="t" data-value="" aria-label="① 언제(날짜·시간) 자리">①</button>에 <button type="button" class="gap empty" data-ex="a" data-ph="②" data-name="② 어디서(접속 위치)" data-accept="p" data-value="" aria-label="② 어디서(접속 위치) 자리">②</button>에서 <button type="button" class="gap empty" data-ex="a" data-ph="③" data-name="③ 누가(사용한 계정)" data-accept="acc" data-value="" aria-label="③ 누가(사용한 계정) 자리">③</button> 계정으로 <button type="button" class="gap empty" data-ex="a" data-ph="④" data-name="④ 무엇을(대상과 행위)" data-accept="what" data-value="" aria-label="④ 무엇을(대상과 행위) 자리">④</button> 했고, 결과는 <button type="button" class="gap empty" data-ex="a" data-ph="⑤" data-name="⑤ 결과" data-accept="res" data-value="" aria-label="⑤ 결과 자리">⑤</button>였다.</p><p class="hint rv">① 언제(날짜·시간) · ② 어디서(접속 위치) · ③ 누가(사용한 계정) · ④ 무엇을(대상과 행위) · ⑤ 결과</p><div class="expl"><p class="ttl">해설</p><p>&#x27;무엇을&#x27;은 대상과 행위를 함께 말한다. 문장에 원인(&quot;비밀번호를 틀려서&quot;)을 넣지 않는다 — 기록에는 원인이 적혀 있지 않다.</p><div class="rows"></div><p class="basis">근거 RFCH06-003 · RFCH06-004</p></div></div></section><section class="scene alt" id="sc06-2" data-ex="b"><div class="bignum" aria-hidden="true">02</div><div class="inner"><span class="step rv">장면 2</span><h2 class="rv">통보에서 전달할 내용을 고른다</h2><p class="hint rv">카드를 누른 뒤 서랍을 누르면 카드가 날아갑니다. 아홉 항목을 세 서랍으로 나누세요.</p><p class="disc rv">교육용 합성 통보·기록 · 실제 제품의 원시 로그·탐지 조건이 아님</p><div class="ctx rv"><p><b>통보</b> — 업무 포털에서 로그인 실패가 여러 번 기록되었습니다. 확인을 요청합니다.</p><p><b>함께 확인한 참고 기록</b> — 2026-03-10 09:10 · 접속 위치 외부 · 교육계정01 · 업무 포털 · 로그인 · 실패</p></div><div class="bank rv" data-bank="b"><button type="button" class="card" data-ex="b" data-id="i1" data-label="업무 포털" aria-pressed="false" data-answer="fact"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h16" />
+  <path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" />
+  <path d="M8 4v4" /></svg>업무 포털</button><button type="button" class="card" data-ex="b" data-id="i2" data-label="누가 시도했는지" aria-pressed="false" data-answer="unk"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 7a4 4 0 1 0 8 0a4 4 0 0 0 -8 0" />
+  <path d="M6 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" /></svg>누가 시도했는지</button><button type="button" class="card" data-ex="b" data-id="i3" data-label="로그인 실패" aria-pressed="false" data-answer="fact"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M12 3v18" />
+  <path d="M12 14l7 -7" />
+  <path d="M12 19l8.5 -8.5" />
+  <path d="M12 9l4.5 -4.5" /></svg>로그인 실패</button><button type="button" class="card" data-ex="b" data-id="i4" data-label="계정 주인의 당시 상황" aria-pressed="false" data-answer="ask"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2" />
+  <path d="M15 7a2 2 0 0 1 2 2" />
+  <path d="M15 3a6 6 0 0 1 6 6" /></svg>계정 주인의 당시 상황</button><button type="button" class="card" data-ex="b" data-id="i5" data-label="2026-03-10 09:10" aria-pressed="false" data-answer="fact"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+  <path d="M12 7v5l3 3" /></svg>2026-03-10 09:10</button><button type="button" class="card" data-ex="b" data-id="i6" data-label="다른 시도에서 성공했는지" aria-pressed="false" data-answer="unk"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10a7 7 0 1 0 14 0a7 7 0 1 0 -14 0" />
+  <path d="M21 21l-6 -6" /></svg>다른 시도에서 성공했는지</button><button type="button" class="card" data-ex="b" data-id="i7" data-label="접속 위치 외부" aria-pressed="false" data-answer="fact"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0" />
+  <path d="M3.6 9h16.8" />
+  <path d="M3.6 15h16.8" />
+  <path d="M11.5 3a17 17 0 0 0 0 18" />
+  <path d="M12.5 3a17 17 0 0 1 0 18" /></svg>접속 위치 외부</button><button type="button" class="card" data-ex="b" data-id="i8" data-label="담당 서비스의 이용 영향" aria-pressed="false" data-answer="ask"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7a4 4 0 1 0 8 0a4 4 0 1 0 -8 0" />
+  <path d="M3 21v-2a4 4 0 0 1 4 -4h4a4 4 0 0 1 4 4v2" />
+  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  <path d="M21 21v-2a4 4 0 0 0 -3 -3.85" /></svg>담당 서비스의 이용 영향</button><button type="button" class="card" data-ex="b" data-id="i9" data-label="업무 영향" aria-pressed="false" data-answer="unk"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0" />
+  <path d="M11 12a1 1 0 1 0 2 0a1 1 0 1 0 -2 0" />
+  <path d="M13.41 10.59l2.59 -2.59" />
+  <path d="M7 12a5 5 0 0 1 5 -5" /></svg>업무 영향</button></div><div class="wins c3 rv"><div class="win" data-ex="b" data-bin="fact"><button type="button" class="dropbtn" aria-label="통보·참고 기록에서 확인한 사실 자리에 고른 카드 놓기"><h3>통보·참고 기록에서 확인한 사실</h3></button><div class="hold"></div></div><div class="win" data-ex="b" data-bin="unk"><button type="button" class="dropbtn" aria-label="아직 모르는 것 자리에 고른 카드 놓기"><h3>아직 모르는 것</h3></button><div class="hold"></div></div><div class="win" data-ex="b" data-bin="ask"><button type="button" class="dropbtn" aria-label="물어야 할 것 자리에 고른 카드 놓기"><h3>물어야 할 것</h3></button><div class="hold"></div></div></div><div class="expl"><p class="ttl">해설</p><p>날짜·접속 위치는 통보가 아니라 함께 확인한 참고 기록에서 온 값이다. 계정명은 실제 행위자의 신원을 보장하지 않으므로 &#x27;누가 시도했는지&#x27;는 아직 모르는 것이다.</p><div class="rows"></div><p class="basis">근거 RFCH06-008</p></div></div></section><section class="scene" id="sc06-3" data-ex="c"><div class="bignum" aria-hidden="true">03</div><div class="inner"><span class="step rv">장면 3</span><h2 class="rv">같은 알림, 접속 위치로 나뉜다</h2><p class="hint rv">1장에서 본 두 상황을 기록의 어느 열로 구별하는지 고르고, 오탐의 뜻을 확인합니다.</p><p class="disc rv">교육용 합성 기록 · 두 줄은 접속 위치만 다른 같은 종류의 실패 기록이며, 같은 사람의 연속 행동을 뜻하지 않는다</p><div class="stage rv"><svg viewBox="0 0 960 236" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="교육용 구조 그림"><text class="zlabel" x="24" y="70">A</text><rect class="zone" x="110" y="40" width="200" height="46" rx="9"/><text class="nodet" x="210" y="69">09:10</text><rect class="zone" x="322" y="40" width="200" height="46" rx="9"/><text class="nodet" x="422" y="69">교육계정01</text><rect class="zone" x="534" y="40" width="200" height="46" rx="9"/><rect x="534" y="40" width="200" height="46" rx="9" fill="none" stroke="var(--acc)" stroke-width="2.5"/><text class="nodet" x="634" y="69">사내 PC</text><rect class="zone" x="746" y="40" width="200" height="46" rx="9"/><text class="nodet" x="846" y="69">실패</text><text class="zlabel" x="24" y="152">B</text><rect class="zone" x="110" y="122" width="200" height="46" rx="9"/><text class="nodet" x="210" y="151">09:10</text><rect class="zone" x="322" y="122" width="200" height="46" rx="9"/><text class="nodet" x="422" y="151">교육계정01</text><rect class="zone" x="534" y="122" width="200" height="46" rx="9"/><rect x="534" y="122" width="200" height="46" rx="9" fill="none" stroke="var(--acc)" stroke-width="2.5"/><text class="nodet" x="634" y="151">외부</text><rect class="zone" x="746" y="122" width="200" height="46" rx="9"/><text class="nodet" x="846" y="151">실패</text><path class="link dr dash" d="M 534 30 L 534 186"/><text class="cap" x="452" y="212">여기서 갈린다</text></svg></div><div class="qs rv" data-qgroup="q1" data-correct="1" data-qlabel="구별하는 열"><div class="qq">1장 상황 A(본인 입력 실수)와 B(다른 곳에서 시도)는 기록의 어느 열로 갈리는가?</div><label class="opt"><input type="radio" name="q1" value="0" data-label="사용한 계정"><span>사용한 계정</span></label><label class="opt"><input type="radio" name="q1" value="1" data-label="접속 위치"><span>접속 위치</span></label><label class="opt"><input type="radio" name="q1" value="2" data-label="행위"><span>행위</span></label><label class="opt"><input type="radio" name="q1" value="3" data-label="결과"><span>결과</span></label></div><div class="qs rv" data-qgroup="q2" data-correct="1" data-qlabel="오탐"><div class="qq">오탐의 뜻으로 옳은 것은?</div><label class="opt"><input type="radio" name="q2" value="0" data-label="공격을 놓친 경우"><span>공격을 놓친 경우</span></label><label class="opt"><input type="radio" name="q2" value="1" data-label="정상 업무가 경보로 잡히는 경우"><span>정상 업무가 경보로 잡히는 경우</span></label><label class="opt"><input type="radio" name="q2" value="2" data-label="장비가 고장난 경우"><span>장비가 고장난 경우</span></label><label class="opt"><input type="radio" name="q2" value="3" data-label="기록이 남지 않은 경우"><span>기록이 남지 않은 경우</span></label></div><div class="expl"><p class="ttl">해설</p><p>오탐인지는 확인 뒤에 정한다. 오탐으로 확인된 알림도 쓸모가 있다 — 정상 업무 패턴을 알게 되고 다음 확인이 빨라진다.</p><div class="rows"></div><p class="basis">근거 RFCH06-005 · RFCH06-006</p></div></div></section>
+<section class="scene alt" id="sc-end"><div class="inner"><span class="step rv">마무리</span><div id="scorebox" class="rv"><p class="score"><span class="big">채점하기를 누르세요</span><small>경보는 확인하라는 신호다. 무슨 일인지는 기록을 읽은 뒤에 안다.</small></p></div><div class="gradebar rv"><button type="button" class="main" id="grade">채점하기</button><button type="button" class="ghost" id="reset">다시 하기</button><button type="button" class="ghost" id="printbtn">인쇄</button></div><nav class="end rv"><a href="SOC2026_practice_ch06.html">← 6장 기본형 실습</a><a href="SOC2026_quiz_ch06.html">6장 퀴즈 풀기</a><a href="SOC2026_practice_ch07.html">다음 실습 7장 →</a></nav></div></section>
+<footer>SOC 2026 · 보안관제 입문 · 실습 · 스크롤 구성</footer>
+
+<script>
+(function(){
+var $=function(s,r){return (r||document).querySelector(s);};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+var byId=function(i){return document.getElementById(i);};
+window.__FLOW__=window.__FLOW__||{};
+var FLOW=window.__FLOW__;
+var VTAG={pass:'통과',stop:'멈춤',odd:'예상 밖',alert:'알림',hold:'대기'};
+var sel=null, RUN={}, graded=false;
+function still(){ return document.body.classList.contains('nomo')
+  || window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+function goTo(el){ el.scrollIntoView({behavior: still()?'auto':'smooth', block:'start'}); }
+function goTop(){ window.scrollTo({top:0, behavior: still()?'auto':'smooth'}); }
+if(window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('nomo');
+
+/* ---------- 스크롤 등장 · 진행 ---------- */
+var scenes=$$('.scene');
+var io=new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in'); });
+},{threshold:.15});
+scenes.forEach(function(s){ io.observe(s); });
+
+$$('.stage svg path.dr').forEach(function(p){
+  try{ var L=Math.ceil(p.getTotalLength())+2; p.style.setProperty('--L',L); }catch(e){}
+});
+scenes.forEach(function(sc){
+  $$('.rv',sc).forEach(function(el,k){ el.style.setProperty('--d',(Math.min(k,8)*0.075)+'s'); });
+  $$('.stage svg g.node',sc).forEach(function(g,k){ g.style.setProperty('--d',(0.35+k*0.09)+'s'); });
+});
+
+var prog=$('.topbar i'), railbtns=$$('.rail button');
+function onScroll(){
+  var h=document.documentElement.scrollHeight-window.innerHeight;
+  if(prog) prog.style.width=(h>0?(window.scrollY/h*100):0)+'%';
+  var mid=window.scrollY+window.innerHeight*0.45, cur=0;
+  scenes.forEach(function(s,i){ if(s.offsetTop<=mid) cur=i; });
+  railbtns.forEach(function(b,i){ b.classList.toggle('on',i===cur); });
+}
+window.addEventListener('scroll',onScroll,{passive:true});
+window.addEventListener('resize',onScroll);
+railbtns.forEach(function(b,i){
+  b.addEventListener('click',function(){ goTo(scenes[i]); });
+});
+onScroll();
+
+var mb=$('.motionbtn');
+if(mb) mb.addEventListener('click',function(){
+  var off=document.body.classList.toggle('nomo');
+  document.documentElement.classList.toggle('nomo',off
+    || window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  mb.textContent=off?'움직임 켜기':'움직임 끄기';
+  mb.setAttribute('aria-pressed',off?'true':'false');
+});
+
+/* ---------- 카드 놓기 ---------- */
+function cardById(ex,id){ return $('.card[data-ex="'+ex+'"][data-id="'+id+'"]'); }
+function armAll(on){ $$('.win,.gap').forEach(function(t){ t.classList.toggle('armed',!!on); }); }
+function clearSel(){ if(sel){ sel.el.classList.remove('sel'); sel.el.setAttribute('aria-pressed','false'); } sel=null; armAll(false); }
+function pick(c){
+  if(graded) return;
+  if(sel&&sel.el===c){ clearSel(); return; }
+  clearSel(); sel={el:c,ex:c.dataset.ex}; c.classList.add('sel'); c.setAttribute('aria-pressed','true'); armAll(true);
+}
+function flyTo(c,dest){
+  var a=c.getBoundingClientRect();
+  dest.appendChild(c);
+  if(still()) return;
+  var b=c.getBoundingClientRect();
+  var dx=a.left-b.left, dy=a.top-b.top;
+  if(!dx&&!dy) return;
+  c.classList.add('flying'); c.style.transform='translate('+dx+'px,'+dy+'px)';
+  requestAnimationFrame(function(){ requestAnimationFrame(function(){
+    c.style.transform='';
+    setTimeout(function(){ c.classList.remove('flying'); },450);
+  });});
+}
+function toBank(c){
+  var bank=$('.bank[data-bank="'+c.dataset.ex+'"]');
+  if(!bank) return;
+  delete c.dataset.bin; c.classList.remove('used');
+  flyTo(c,bank); mark();
+}
+function placeInWin(win){
+  if(graded||!sel||sel.ex!==win.dataset.ex) return;
+  var c=sel.el; c.dataset.bin=win.dataset.bin; clearSel();
+  flyTo(c,$('.hold',win)); mark();
+}
+function placeInGap(g){
+  if(graded||!sel||sel.ex!==g.dataset.ex) return;
+  var c=sel.el, prev=g.dataset.value;
+  if(prev){ var pc=cardById(g.dataset.ex,prev); if(pc) pc.classList.remove('used'); }
+  g.dataset.value=c.dataset.id; g.textContent=c.dataset.label;
+  g.classList.remove('empty'); g.classList.add('filled');
+  c.classList.add('used'); clearSel(); mark();
+}
+function clearGap(g){
+  if(graded||!g.dataset.value) return;
+  var pc=cardById(g.dataset.ex,g.dataset.value); if(pc) pc.classList.remove('used');
+  g.dataset.value=''; g.textContent=g.dataset.ph;
+  g.classList.remove('filled'); g.classList.add('empty'); mark();
+}
+document.addEventListener('click',function(e){
+  var c=e.target.closest&&e.target.closest('.card');
+  if(c){
+    if(graded) return;
+    if(c.closest('.hold')){
+      if(!(sel&&sel.el!==c&&sel.ex===c.dataset.ex)){ e.stopPropagation(); toBank(c); return; }
+    } else { e.stopPropagation(); pick(c); return; }
+  }
+  var w=e.target.closest&&e.target.closest('.win');
+  if(w){ e.stopPropagation(); placeInWin(w); return; }
+  var g=e.target.closest&&e.target.closest('.gap');
+  if(g){ e.stopPropagation(); if(sel) placeInGap(g); else clearGap(g); return; }
+  if(sel&&!(e.target.closest&&e.target.closest('.runbtn'))) clearSel();
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'){ clearSel(); return; }
+  if(e.key!=='Enter'&&e.key!==' ') return;
+  var t=document.activeElement; if(!t||!t.classList) return;
+  if(t.classList.contains('dropbtn')){ e.preventDefault(); placeInWin(t.closest('.win')); }
+});
+
+/* ---------- 흐름 실행 ---------- */
+function nodePos(svg,id){
+  var g=$('[data-node="'+id+'"]',svg); if(!g) return null;
+  return {x:parseFloat(g.dataset.x),y:parseFloat(g.dataset.y)};
+}
+function animate(c,from,to,ms,alive){
+  return new Promise(function(res){
+    if(still()){ c.setAttribute('cx',to.x); c.setAttribute('cy',to.y); setTimeout(res,150); return; }
+    var t0=Date.now(), iv=setInterval(function(){
+      if(alive&&!alive()){ clearInterval(iv); res(); return; }
+      var p=Math.min(1,(Date.now()-t0)/ms), e=p<.5?2*p*p:-1+(4-2*p)*p;
+      c.setAttribute('cx',from.x+(to.x-from.x)*e); c.setAttribute('cy',from.y+(to.y-from.y)*e);
+      if(p>=1){ clearInterval(iv); res(); }
+    },16);
+  });
+}
+function logLine(box,v,text){
+  var em=box.querySelector('.empty'); if(em) box.innerHTML='';
+  var d=document.createElement('div'); d.className='li';
+  d.innerHTML='<span class="tag t-'+v+'"></span><span class="tx"></span>';
+  $('.tag',d).textContent=VTAG[v]||v;
+  $('.tx',d).textContent=text; box.appendChild(d);
+}
+function freshLayer(svg){
+  $$('.runlayer',svg).forEach(function(n){ n.remove(); });
+  var l=document.createElementNS('http://www.w3.org/2000/svg','g');
+  l.setAttribute('class','runlayer'); l.setAttribute('pointer-events','none'); svg.appendChild(l); return l;
+}
+function makeDot(layer,x,y,r){
+  var c=document.createElementNS('http://www.w3.org/2000/svg','circle');
+  c.setAttribute('class','dot'); c.setAttribute('r',r||9);
+  c.setAttribute('cx',x); c.setAttribute('cy',y); layer.appendChild(c); return c;
+}
+function runScenario(sceneId,idx){
+  var sc=byId(sceneId), svg=$('.stage svg',sc), box=$('.log',sc), cfg=FLOW[sceneId];
+  if(!sc||!svg||!cfg) return;
+  var seq=(RUN[sceneId]=(RUN[sceneId]||0)+1);
+  function alive(){ return RUN[sceneId]===seq; }
+  var s=cfg.scenarios[idx]; if(!s) return;
+  var btns=$$('.runbtn',sc);
+  btns.forEach(function(b,i){ b.disabled=true; b.classList.toggle('on',i===idx); });
+  box.innerHTML='';
+  var layer=freshLayer(svg);
+  var start=nodePos(svg,cfg.start)||{x:60,y:170};
+  var c=makeDot(layer,start.x,start.y,9);
+  var at=start, i=0;
+  function done(){ btns.forEach(function(b){ b.disabled=false; }); }
+  function step(){
+    if(!alive()) return;
+    if(i>=s.steps.length){ if(s.done) logLine(box,'pass',s.done); done(); return; }
+    var st=s.steps[i++], p=nodePos(svg,st.node);
+    if(!p){ step(); return; }
+    animate(c,at,p,720,alive).then(function(){
+      if(!alive()) return;
+      at=p; logLine(box,st.v||'pass',st.text||'');
+      setTimeout(step,360);
+    });
+  }
+  setTimeout(step,200);
+}
+$$('.runbtn[data-run]').forEach(function(b){
+  b.addEventListener('click',function(){ runScenario(b.dataset.run,parseInt(b.dataset.idx,10)); });
+});
+
+/* ---------- 처리 여력 ---------- */
+function runCap(sceneId,n){
+  var sc=byId(sceneId), svg=$('.stage svg',sc), box=$('.log',sc), g=$('.gauge',sc);
+  if(!sc||!svg) return;
+  var capv=parseInt(sc.dataset.cap||'4',10);
+  var seq=(RUN[sceneId]=(RUN[sceneId]||0)+1);
+  function alive(){ return RUN[sceneId]===seq; }
+  var btns=$$('.runbtn',sc); btns.forEach(function(b){ b.disabled=true; });
+  box.innerHTML='';
+  var layer=freshLayer(svg);
+  var desk=nodePos(svg,'desk2')||{x:640,y:170};
+  g.classList.toggle('over',n>capv);
+  $('.bar i',g).style.width=Math.min(100,n/capv*100)+'%';
+  $('.now',g).textContent=n+'건';
+  var served=Math.min(n,capv);
+  var waiting=Math.max(0,Math.min(n-capv,capv));
+  var dropped=Math.max(0,n-capv*2);
+  var made=0, fin=0;
+  function finish(){
+    if(!alive()) return;
+    if(served) logLine(box,'pass','처리됨 '+served+'건 — 차례대로 처리');
+    if(waiting) logLine(box,'hold','기다림 '+waiting+'건 — 긴 기다림');
+    if(dropped) logLine(box,'stop','처리되지 않음 '+dropped+'건 — 처리 여력을 넘겼다');
+    logLine(box,'alert','혼잡과 공격은 다르다. 누가 왜 몰리는지는 확인이 필요하다.');
+    btns.forEach(function(b){ b.disabled=false; });
+  }
+  for(var k=0;k<n;k++){
+    (function(k){
+      var y=170+((k%5)-2)*18;
+      var c=makeDot(layer,70,y,7); made++;
+      var kind = k<served ? 'go' : (k<served+waiting ? 'wait' : 'drop');
+      var tgt = kind==='go' ? {x:desk.x,y:desk.y}
+              : kind==='wait' ? {x:desk.x-150,y:desk.y-52+((k%4)*26)}
+              : {x:150,y:y+92};
+      setTimeout(function(){
+        if(!alive()) return;
+        animate(c,{x:70,y:y},tgt,kind==='go'?1050:850,alive).then(function(){
+          if(!alive()) return;
+          if(kind==='go') c.setAttribute('opacity','.28');
+          else if(kind==='wait') c.setAttribute('fill','#FFDE95');
+          else { c.setAttribute('fill','#FFB4A2'); c.setAttribute('opacity','.5'); }
+          if(++fin===made) finish();
+        });
+      },k*110);
+    })(k);
+  }
+}
+$$('.runbtn[data-cap]').forEach(function(b){
+  b.addEventListener('click',function(){
+    $$('.runbtn[data-cap]',b.closest('.scene')).forEach(function(x){ x.classList.toggle('on',x===b); });
+    runCap(b.dataset.cap,parseInt(b.dataset.n,10));
+  });
+});
+
+/* ---------- 흐르는 기록 붙잡기 ---------- */
+function holdStream(sc,on){
+  var st=$('.stream',sc), roll=$('.roll',st), row=$('.row.pick',roll), pk=$('.picked',sc);
+  st.classList.toggle('hold',on);
+  if(on&&row){
+    var off=Math.max(0,row.offsetTop-(st.clientHeight/2-row.offsetHeight/2));
+    roll.style.animation='none'; roll.style.transform='translateY(-'+off+'px)';
+  } else {
+    roll.style.animation=''; roll.style.transform='';
+  }
+  if(pk) pk.style.display=on?'grid':'none';
+}
+$$('[data-hold]').forEach(function(b){
+  b.addEventListener('click',function(){
+    var sc=byId(b.dataset.hold);
+    var on=!$('.stream',sc).classList.contains('hold');
+    holdStream(sc,on);
+    b.textContent=on?'다시 흐르게':'한 줄 붙잡기';
+    b.classList.toggle('on',on);
+  });
+});
+
+/* ---------- 채점 ---------- */
+function gradeScene(sc){
+  var ok=0,total=0,rows=[];
+  $$('.gap',sc).forEach(function(g){
+    total++;
+    var acc=(g.dataset.accept||'').split('|').filter(Boolean), v=g.dataset.value||'';
+    var good=acc.indexOf(v)>=0; if(good)ok++;
+    g.classList.add(good?'ok':'no');
+    var want=acc.map(function(id){var c=cardById(g.dataset.ex,id);return c?c.dataset.label:id;}).join(' 또는 ');
+    var got=v?(cardById(g.dataset.ex,v)||{dataset:{}}).dataset.label:'비어 있음';
+    rows.push({g:good,t:'<b>'+(g.dataset.name||g.dataset.ph)+'</b> — 놓은 것: '+got+(good?'':' / 정답: '+want)});
+  });
+  var ws=$$('.win',sc);
+  if(ws.length){
+    var names={}; ws.forEach(function(w){ names[w.dataset.bin]=$('h3',w).textContent; });
+    $$('.card[data-answer]',sc).forEach(function(c){
+      total++;
+      var want=c.dataset.answer.split('|'), got=c.dataset.bin||'';
+      var good=want.indexOf(got)>=0; if(good)ok++;
+      rows.push({g:good,t:'<b>'+c.dataset.label+'</b> → '+(names[got]||'놓지 않음')
+        +(good?'':' / 정답: '+want.map(function(w){return names[w];}).join(' 또는 '))});
+    });
+  }
+  $$('[data-qgroup]',sc).forEach(function(q){
+    total++;
+    var opts=$$('input[name="'+q.dataset.qgroup+'"]',q);
+    var chosen=opts.filter(function(o){return o.checked;})[0];
+    var ai=parseInt(q.dataset.correct,10);
+    var good=chosen&&parseInt(chosen.value,10)===ai; if(good)ok++;
+    opts.forEach(function(o,k){ var l=o.closest('.opt'); if(k===ai)l.classList.add('is-answer'); if(chosen===o)l.classList.add('is-chosen'); o.disabled=true; });
+    rows.push({g:good,t:'<b>'+(q.dataset.qlabel||'선택')+'</b> — 고른 것: '+(chosen?chosen.dataset.label:'고르지 않음')
+      +(good?'':' / 정답: '+(opts[ai]?opts[ai].dataset.label:''))});
+  });
+  return {ok:ok,total:total,rows:rows};
+}
+function mark(){
+  scenes.forEach(function(sc){
+    if(!sc.dataset.ex) return;
+    var need=$$('.gap',sc).length+$$('.card[data-answer]',sc).length+$$('[data-qgroup]',sc).length;
+    var have=$$('.gap',sc).filter(function(g){return g.dataset.value;}).length
+            +$$('.card[data-answer]',sc).filter(function(c){return c.dataset.bin;}).length
+            +$$('[data-qgroup]',sc).filter(function(q){return $('input:checked',q);}).length;
+    sc.classList.toggle('done',need>0&&have>=need);
+  });
+}
+$$('.opt input').forEach(function(o){ o.addEventListener('change',mark); });
+
+var gbtn=byId('grade');
+if(gbtn) gbtn.addEventListener('click',function(){
+  graded=true; clearSel();
+  var ok=0,total=0;
+  scenes.forEach(function(sc){
+    sc.classList.add('graded');
+    if(!sc.dataset.ex) return;
+    var r=gradeScene(sc); ok+=r.ok; total+=r.total;
+    var box=$('.rows',sc);
+    if(box) box.innerHTML=r.rows.map(function(x){
+      return '<div class="r '+(x.g?'g':'b')+'"><span class="m">'+(x.g?'O':'X')+'</span><span class="t">'+x.t+'</span></div>';
+    }).join('');
+  });
+  document.body.classList.add('graded');
+  var s=$('#scorebox .score .big'); if(s) s.textContent=total+'개 중 '+ok+'개 정답';
+  var last=byId('sc-end');
+  if(last){ last.classList.add('in'); goTo(last); }
+});
+var rbtn=byId('reset');
+if(rbtn) rbtn.addEventListener('click',function(){
+  graded=false; document.body.classList.remove('graded');
+  for(var k in RUN){ RUN[k]=(RUN[k]||0)+1; }
+  clearSel();
+  $$('.card').forEach(function(c){
+    delete c.dataset.bin; c.classList.remove('used','sel'); c.setAttribute('aria-pressed','false');
+    var bank=$('.bank[data-bank="'+c.dataset.ex+'"]'); if(bank) bank.appendChild(c);
+  });
+  $$('.gap').forEach(function(g){ g.dataset.value=''; g.textContent=g.dataset.ph; g.className='gap empty'; });
+  $$('.opt').forEach(function(o){ o.classList.remove('is-answer','is-chosen'); });
+  $$('.opt input').forEach(function(o){ o.checked=false; o.disabled=false; });
+  scenes.forEach(function(sc){ sc.classList.remove('graded','done'); });
+  $$('.rows').forEach(function(r){ r.innerHTML=''; });
+  $$('.log').forEach(function(l){ l.innerHTML='<span class="empty">아직 흘려보내지 않았습니다.</span>'; });
+  $$('.runlayer').forEach(function(l){ l.remove(); });
+  $$('.runbtn').forEach(function(b){ b.disabled=false; b.classList.remove('on'); });
+  $$('.gauge').forEach(function(g){ g.classList.remove('over'); $('.bar i',g).style.width='0%'; $('.now',g).textContent='0건'; });
+  $$('[data-hold]').forEach(function(b){
+    holdStream(byId(b.dataset.hold),false); b.textContent='한 줄 붙잡기'; b.classList.remove('on');
+  });
+  var s=$('#scorebox .score .big'); if(s) s.textContent='다시 풀어 보세요';
+  goTop();
+});
+var pbtn=byId('printbtn'); if(pbtn) pbtn.addEventListener('click',function(){ window.print(); });
+mark();
+})();
+</script>
+</body>
+</html>

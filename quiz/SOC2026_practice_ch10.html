@@ -1,0 +1,209 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 실습(사건의 흐름) · 10장 SK텔레콤 — 정부 조사 결과를 따라간다</title>
+<style>:root{--g:#5B3E96;--dg:#3E2770;--tint:#EFECF4;--bd:#E2E6EB;--ter:#A3A3A3;}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}}
+html.nomo *,html.nomo *::before,html.nomo *::after{animation:none!important;transition:none!important}
+html.nomo{scroll-behavior:auto}
+body{margin:0;background:#F4F6F8;color:#111;
+ font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+ font-size:15px;line-height:1.65;-webkit-text-size-adjust:100%}
+.topbar{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(0,0,0,.07);z-index:60}
+.topbar i{display:block;height:100%;width:0;background:var(--g);transition:width .15s}
+.motionbtn{position:fixed;right:14px;bottom:14px;z-index:60;background:#fff;border:1.5px solid var(--bd);
+ border-radius:999px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.scene{min-height:auto;padding:56px 20px;display:flex;justify-content:center}
+.scene.alt{background:var(--tint)}
+.inner{width:100%;max-width:860px;opacity:0;transform:translateY(16px);transition:opacity .5s,transform .5s}
+.scene.in .inner,html.nomo .inner{opacity:1;transform:none}
+.cover{background:var(--dg);color:#fff;text-align:left}
+.cover .inner{max-width:860px}
+.kicker{font-size:13px;letter-spacing:.04em;color:rgba(255,255,255,.85);margin:0 0 10px}
+.cover h1{font-size:30px;line-height:1.3;margin:0 0 12px}
+.cover p{color:rgba(255,255,255,.9);margin:0 0 6px}
+.pgchip{display:inline-flex;align-items:center;background:var(--tint);color:var(--dg);font-weight:700;
+ font-size:12.5px;border-radius:999px;padding:3px 11px;margin-bottom:10px}
+.scene.alt .pgchip{background:#fff}
+h2.t{font-size:22px;line-height:1.35;margin:0 0 8px}
+p.lead{color:#5F5F5F;margin:0 0 16px}
+.card{background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:14px 16px}
+.scene.alt .card{background:#fff}
+.opt{display:flex;gap:9px;align-items:flex-start;border:1.5px solid var(--bd);border-radius:9px;
+ padding:10px 12px;margin:7px 0;cursor:pointer;background:#fff;font-size:14.5px;line-height:1.55}
+.opt:hover{border-color:var(--g)} .opt input{margin-top:3px;accent-color:var(--g)}
+.graded .opt{cursor:default}
+.graded .opt.is-answer{border-color:var(--g);border-width:2.5px;background:var(--tint)}
+.graded .opt.is-chosen:not(.is-answer){border-color:#111;border-style:dashed;border-width:2.5px}
+.oitem{position:relative;display:flex;gap:10px;align-items:center;border:1.5px solid var(--bd);
+ border-radius:10px;padding:11px 13px;margin:8px 0;background:#fff;cursor:pointer;
+ font:inherit;font-size:14.5px;line-height:1.55;text-align:left;width:100%}
+.oitem:hover{border-color:var(--g)} .oitem:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.oitem .num{flex:0 0 28px;height:28px;border-radius:50%;border:1.5px dashed var(--ter);
+ display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--ter)}
+.oitem.on{background:var(--tint);border-color:var(--g)}
+.oitem.on .num{background:var(--g);color:#fff;border:0}
+.oitem.ok{border-color:var(--g);border-width:2.5px}
+.oitem.ng{border-color:#111;border-style:dashed;border-width:2.5px}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mc{position:relative;text-align:left;background:#fff;border:1.5px solid var(--bd);border-radius:11px;
+ padding:12px;cursor:pointer;font:inherit;font-size:14.5px;line-height:1.55;min-height:84px;
+ display:flex;align-items:center}
+.mc:hover{border-color:var(--g)} .mc:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.mc[aria-pressed="true"]{border-color:var(--g);box-shadow:0 0 0 3px var(--tint)}
+.mc.linked{background:var(--tint);border-color:var(--g)}
+.mc .bg2{position:absolute;top:-9px;left:-9px;width:25px;height:25px;border-radius:50%;background:var(--g);
+ color:#fff;font-weight:700;font-size:12.5px;display:none;align-items:center;justify-content:center}
+.mc.linked .bg2{display:flex}
+.mc.mok{border-color:var(--g);border-width:2.5px} .mc.mng{border-color:#111;border-style:dashed;border-width:2.5px}
+.vd{display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd);font-size:13.5px;line-height:1.65}
+.graded .vd{display:block}
+.tg{display:inline-block;background:var(--g);color:#fff;font-weight:700;font-size:12px;border-radius:6px;
+ padding:2px 8px;margin-right:7px}
+.tg.ng{background:#111}
+.basis{margin-top:8px;color:#5F5F5F;font-size:12.5px}
+.ansbox{margin-top:10px;background:var(--tint);border-radius:9px;padding:10px 14px;font-size:13.5px}
+.ansbox b{display:block;margin-bottom:4px;color:var(--dg)}
+.ansbox ol,.ansbox ul{margin:0;padding-left:20px} .ansbox li{margin:3px 0}
+.gbtn.again{margin-top:12px;background:#fff;color:var(--dg);border:1.5px solid var(--g);font-size:14px;padding:8px 16px}
+.gbtn{margin-top:14px;background:var(--g);color:#fff;border:0;border-radius:10px;padding:11px 20px;
+ font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.gbtn[disabled]{opacity:.45;cursor:default}
+.hintx{color:#5F5F5F;font-size:13px;margin-top:8px}
+nav.ft{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:28px 20px 10px}
+nav.ft a{color:var(--dg);font-weight:700;text-decoration:none;font-size:14px}
+footer{text-align:center;color:#8A8A8A;font-size:12.5px;padding:8px 0 40px}
+@media(max-width:720px){.mrow{grid-template-columns:1fr}.scene{padding:40px 16px}.cover h1{font-size:25px}}
+@media print{.scene{page-break-inside:avoid}.motionbtn,.topbar{display:none}}
+</style></head><body>
+<div class="topbar"><i></i></div>
+<button class="motionbtn" type="button" aria-pressed="false">움직임 끄기</button>
+<section class="scene cover in"><div class="inner">
+<p class="kicker">SOC 2026 · 보안관제 입문 · 실습(사건의 흐름)</p>
+<h1>10장 SK텔레콤 — 정부 조사 결과를 따라간다</h1>
+<p>과학기술정보통신부 민관합동조사단 최종 조사 결과(2025년 7월 4일 발표)를 따라갑니다.</p><p>기록이 남아 있지 않은 기간은 · 확인할 수 없음이다.</p>
+<p style="margin-top:14px;font-size:13px;color:rgba(255,255,255,.75)">
+발표된 사실만 다룹니다 · 원인이나 동기를 추측하지 않습니다 · 저장 없음 · 2일-③</p>
+</div></section>
+<section class="scene sc-order alt" data-e="이 다섯은 발표된 시간선의 일부다. 단계가 아니라 날짜가 확인된 장면이다." data-b="현행 10장 99~104쪽 · RFCH11-004~009"><div class="inner"><span class="pgchip">99~104쪽</span><h2 class="t">주요 다섯 장면을 시간 순으로</h2><p class="lead">발표된 시간선에서 뽑은 주요 다섯 장면입니다. 이른 것부터 놓으세요. (전체 시간선에는 2023년 11월까지 여섯 눈금이 있습니다.)</p><div class="card"><button type="button" class="oitem" data-i="0"><span class="num">·</span><span>2021년 8월 6일 · 바깥과 닿는 서버 한 대 — 악성코드 설치일</span></button><button type="button" class="oitem" data-i="1"><span class="num">·</span><span>2021년 12월 24일 · 코어망 인증 서버까지</span></button><button type="button" class="oitem" data-i="2"><span class="num">·</span><span>2022년 2월 · 알아챘는데 놓쳤다</span></button><button type="button" class="oitem" data-i="3"><span class="num">·</span><span>2022년 6월 · 고객 관리망으로</span></button><button type="button" class="oitem" data-i="4"><span class="num">·</span><span>2025년 4월 · 나가는 길, 그리고 신고까지</span></button><p class="hintx">순서대로 누르면 번호가 붙습니다 · 다시 누르면 빠집니다</p><button class="gbtn" disabled>확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-pick" data-e="발표 당시 조사기관 판단으로 미신고는 법 위반이다. 알아챈 것이 끝까지 확인되고 알려지지 않으면 끊을 기회가 지나간다." data-b="현행 10장 102쪽 · RFCH11-007" data-a="2"><div class="inner"><span class="pgchip">102쪽</span><h2 class="t">2022년 2월 · 알아챘는데 놓쳤다</h2><p class="lead">102쪽에서 「알아챘는데 놓쳤다」고 한 까닭은?</p><div class="card"><label class="opt"><input type="radio" name="p2" value="0"><span>① 비정상 재부팅이 일어났으나 끝내 발견하지 못하고 지나쳤다</span></label><label class="opt"><input type="radio" name="p2" value="1"><span>② 점검은 했으나 감염된 서버를 찾지 못한 채로 종료했다</span></label><label class="opt"><input type="radio" name="p2" value="2"><span>③ 악성코드를 찾아 조치했으나 신고하지 않았고 · 함께 발견한 정황의 로그를 하나만 확인했다</span></label><label class="opt"><input type="radio" name="p2" value="3"><span>④ 법에 따라 신고했으나 조사가 이뤄지지 않은 채로 묻혔다</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-pick alt" data-e="기록이 남아 있는 기간은 「자료가 나간 정황 없음」, 남아 있지 않은 기간은 「확인할 수 없음」이다. SK텔레콤은 자체 규정상 6개월 이상 보관해야 했으나 방화벽 기록을 4개월만 보관하고 있었다." data-b="현행 10장 105쪽 · RFCH11-010" data-a="2"><div class="inner"><span class="pgchip">105쪽</span><h2 class="t">어떤 서버의 무엇을 확인할 수 있었나</h2><p class="lead">105쪽은 서버 세 대(개인정보 평문 임시 저장 두 대 · 통신기록 평문 임시 저장 한 대)에 한한 이야기입니다. 방화벽 기록이 없는 기간에 대해 말할 수 있는 것은?</p><div class="card"><label class="opt"><input type="radio" name="p3" value="0"><span>① 자료가 나가지 않았다</span></label><label class="opt"><input type="radio" name="p3" value="1"><span>② 자료가 나갔다</span></label><label class="opt"><input type="radio" name="p3" value="2"><span>③ 확인할 수 없다</span></label><label class="opt"><input type="radio" name="p3" value="3"><span>④ 추정할 수 있다</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-pick" data-e="이것은 그 회사에 요구한 것이다. 우리 기관의 답은 적용 규정·계약·담당 부서가 정한다." data-b="현행 10장 106쪽 · RFCH11-011" data-a="1"><div class="inner"><span class="pgchip">106쪽</span><h2 class="t">정부가 SK텔레콤에 요구한 대책</h2><p class="lead">106쪽이 이 대책들을 보여 준 뒤 우리 기관에 돌린 물음은?</p><div class="card"><label class="opt"><input type="radio" name="p4" value="0"><span>① 우리도 같은 대책을 그대로 도입해야 하는가</span></label><label class="opt"><input type="radio" name="p4" value="1"><span>② 우리 기관은 무엇을 얼마나 보관하나 · 어떤 규정과 계약이 정하나 · 담당 부서는 어디인가</span></label><label class="opt"><input type="radio" name="p4" value="2"><span>③ 우리 기관의 정보보호 예산은 충분한가</span></label><label class="opt"><input type="radio" name="p4" value="3"><span>④ 우리도 같은 공격을 받을 가능성이 있는가</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section>
+<nav class="ft"><a href="SOC2026_practice_ch09.html">← 이전 실습 9장</a><a href="SOC2026_practice_ch11.html">다음 실습 11장 →</a></nav><footer>SOC 2026 · 보안관제 입문</footer>
+<script>
+(function(){
+ var $=function(s,r){return (r||document).querySelector(s)},
+     $$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+   document.documentElement.classList.add('nomo');
+ var mb=$('.motionbtn');
+ mb.addEventListener('click',function(){
+   var off=document.documentElement.classList.toggle('nomo');
+   mb.textContent=off?'움직임 켜기':'움직임 끄기'; mb.setAttribute('aria-pressed',off?'true':'false');
+ });
+ if(document.documentElement.classList.contains('nomo')){mb.textContent='움직임 켜기';mb.setAttribute('aria-pressed','true');}
+ var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},
+   {threshold:.12});
+ $$('.scene').forEach(function(s){io.observe(s);});
+ addEventListener('scroll',function(){
+   var h=document.documentElement.scrollHeight-innerHeight;
+   $('.topbar i').style.width=(h>0?(scrollY/h*100):0)+'%';
+ },{passive:true});
+
+ // ── 순서 맞추기 ──
+ $$('.sc-order').forEach(function(sec){
+   var seq=[];
+   function paint(){
+     $$('.oitem',sec).forEach(function(b){
+       var k=seq.indexOf(b.dataset.i);
+       b.classList.toggle('on',k>=0);
+       b.querySelector('.num').textContent = k>=0 ? (k+1) : '·';
+     });
+     $('.gbtn',sec).disabled = seq.length!==$$('.oitem',sec).length;
+   }
+   $$('.oitem',sec).forEach(function(b){
+     b.addEventListener('click',function(){
+       if(sec.classList.contains('graded'))return;
+       var k=seq.indexOf(b.dataset.i);
+       if(k>=0) seq.splice(k,1); else seq.push(b.dataset.i);
+       paint();
+     });
+     b.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();b.click();}});
+   });
+   $('.gbtn',sec).addEventListener('click',function(){
+     var ok=0,n=seq.length;
+     seq.forEach(function(id,k){
+       var b=$('.oitem[data-i="'+id+'"]',sec);
+       var right=(+id===k); if(right)ok++;
+       b.classList.add(right?'ok':'ng');
+     });
+     var right='<div class="ansbox"><b>올바른 순서</b><ol>'+
+       $$('.oitem',sec).slice().sort(function(a,b){return a.dataset.i-b.dataset.i;})
+         .map(function(b){return '<li>'+b.querySelector('span:last-child').textContent+'</li>';}).join('')+'</ol></div>';
+     $('.vd',sec).innerHTML=(ok===n?'<span class="tg">모두 맞음</span>':'<span class="tg ng">'+ok+'/'+n+' 맞음</span>')
+       +sec.dataset.e+right+'<div class="basis">근거 · '+sec.dataset.b+'</div>'
+       +'<button class="gbtn again" type="button">다시 해 보기</button>';
+     sec.classList.add('graded'); this.disabled=true;
+     $('.again',sec).addEventListener('click',function(){location.reload();});
+   });
+   paint();
+ });
+
+ // ── 선택형 ──
+ $$('.sc-pick').forEach(function(sec){
+   var a=+sec.dataset.a;
+   $('.gbtn',sec).addEventListener('click',function(){
+     var ch=$('input:checked',sec), c=ch?+ch.value:-1;
+     $$('.opt',sec).forEach(function(o,k){
+       o.classList.toggle('is-answer',k===a); o.classList.toggle('is-chosen',k===c);
+       $('input',o).disabled=true;});
+     $('.vd',sec).innerHTML=(c===a?'<span class="tg">맞음</span>':(c<0?'<span class="tg ng">미응답</span>':'<span class="tg ng">다시</span>'))
+       +sec.dataset.e+'<div class="basis">근거 · '+sec.dataset.b+'</div>';
+     sec.classList.add('graded'); this.disabled=true;
+   });
+ });
+
+ // ── 짝 맞추기 ──
+ $$('.sc-match').forEach(function(sec){
+   var sel=null, map={};
+   function paint(){
+     var n=0;
+     $$('.mc',sec).forEach(function(c){c.classList.remove('linked');c.querySelector('.bg2').textContent='';});
+     Object.keys(map).forEach(function(L){ n++;
+       [$('.mc[data-s="L"][data-i="'+L+'"]',sec), $('.mc[data-s="R"][data-i="'+map[L]+'"]',sec)]
+         .forEach(function(e){if(e){e.classList.add('linked');e.querySelector('.bg2').textContent=n;}});
+     });
+     $('.gbtn',sec).disabled = Object.keys(map).length!==$$('.mc[data-s="L"]',sec).length;
+   }
+   $$('.mc',sec).forEach(function(c){
+     c.addEventListener('click',function(){
+       if(sec.classList.contains('graded'))return;
+       var s=c.dataset.s,i=c.dataset.i,un=false;
+       Object.keys(map).forEach(function(L){if((s==='L'&&L===i)||(s==='R'&&map[L]===i)){delete map[L];un=true;}});
+       if(un){if(sel){sel.setAttribute('aria-pressed','false');sel=null;}paint();return;}
+       if(s==='L'){if(sel)sel.setAttribute('aria-pressed','false');sel=c;c.setAttribute('aria-pressed','true');return;}
+       if(sel){map[sel.dataset.i]=i;sel.setAttribute('aria-pressed','false');sel=null;paint();}
+     });
+     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();c.click();}});
+   });
+   $('.gbtn',sec).addEventListener('click',function(){
+     var ok=0,n=$$('.mc[data-s="L"]',sec).length;
+     for(var i=0;i<n;i++){
+       var b=$('.mc[data-s="L"][data-i="'+i+'"]',sec), right=(map[i]===''+i);
+       if(right)ok++; b.classList.add(right?'mok':'mng');
+     }
+     var rows='';
+     for(var j=0;j<n;j++){
+       rows+='<li>'+$('.mc[data-s="L"][data-i="'+j+'"]',sec).querySelector('span:last-child').textContent
+            +' <b>→</b> '+$('.mc[data-s="R"][data-i="'+j+'"]',sec).querySelector('span:last-child').textContent+'</li>';
+     }
+     $('.vd',sec).innerHTML=(ok===n?'<span class="tg">모두 맞음</span>':'<span class="tg ng">'+ok+'/'+n+' 맞음</span>')
+       +sec.dataset.e+'<div class="ansbox"><b>올바른 짝</b><ul>'+rows+'</ul></div>'
+       +'<div class="basis">근거 · '+sec.dataset.b+'</div>'
+       +'<button class="gbtn again" type="button">다시 해 보기</button>';
+     sec.classList.add('graded'); this.disabled=true;
+     $('.again',sec).addEventListener('click',function(){location.reload();});
+   });
+   paint();
+ });
+})();
+</script></body></html>

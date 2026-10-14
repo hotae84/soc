@@ -1,0 +1,139 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 실습(모션) · 15장 우리 기관의 관제 범위</title>
+<style>:root{--g:#1B6E55;--dg:#0D4D39;--sky:#E8F0EE;--ink:#0B1630;--grgb:27,110,85;--dgrgb:13,77,57}
+*{box-sizing:border-box} html,body{height:100%;margin:0}
+body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;color:#fff;background:var(--ink);overflow:hidden}
+.bg{position:fixed;inset:0;overflow:hidden;background:radial-gradient(1200px 700px at 15% 20%,rgba(var(--grgb),.5),transparent 60%),radial-gradient(900px 600px at 85% 80%,rgba(var(--dgrgb),.6),transparent 60%),var(--ink)}
+.bg i{position:absolute;border-radius:50%;border:1.5px solid rgba(255,255,255,.08);animation:drift 26s linear infinite}
+.bg i:nth-child(1){width:46vmax;height:46vmax;left:-12vmax;top:-10vmax}.bg i:nth-child(2){width:30vmax;height:30vmax;right:-8vmax;bottom:-12vmax;animation-duration:34s;animation-direction:reverse}
+@keyframes drift{from{transform:rotate(0) translateX(1.2vmax) rotate(0)}to{transform:rotate(360deg) translateX(1.2vmax) rotate(-360deg)}}
+.hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:14px;padding:14px 18px;font-size:13px;color:rgba(255,255,255,.78)}
+.hud .k{font-weight:700;letter-spacing:.04em}.hud .bar{flex:1;height:4px;background:rgba(255,255,255,.14);border-radius:2px;overflow:hidden}.hud .bar i{display:block;height:100%;width:0;background:#fff;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.hud .steps{display:flex;gap:12px;flex-wrap:wrap}.hud .steps span{color:rgba(255,255,255,.78)}.hud .steps span.on{color:#fff;font-weight:800;text-decoration:underline;text-underline-offset:4px}
+.mbtn{background:transparent;color:rgba(255,255,255,.85);border:1.5px solid rgba(255,255,255,.35);border-radius:999px;padding:6px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.scene{position:fixed;inset:66px 20px 20px;display:flex;flex-direction:column;overflow:auto;-webkit-overflow-scrolling:touch;opacity:0;visibility:hidden;transform:translateX(6vw) scale(.985);transition:opacity .45s,transform .55s cubic-bezier(.2,.8,.2,1),visibility 0s .55s}
+.scene.on{opacity:1;visibility:visible;transform:none;transition:opacity .45s,transform .55s cubic-bezier(.2,.8,.2,1)}.scene.out{opacity:0;transform:translateX(-6vw)}
+.inner{width:min(960px,100%);outline:none;margin:auto;padding:4px 0;position:relative}
+.chip{display:inline-block;background:rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:13px;margin-bottom:12px}
+h1{font-size:clamp(26px,4.4vw,42px);line-height:1.25;margin:0 0 12px}h2{font-size:clamp(20px,3vw,28px);margin:0 0 6px}p.lead{color:rgba(255,255,255,.82);margin:0 0 16px;font-size:15px}
+.go,.next{background:#fff;color:var(--dg);border:0;border-radius:13px;padding:12px 22px;font:inherit;font-weight:800;font-size:15px;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.25)}.go:disabled{opacity:.4;cursor:default;box-shadow:none}
+.card{background:rgba(255,255,255,.96);color:#111;border:2px solid transparent;border-radius:12px;padding:12px 14px;font:inherit;font-size:14.5px;line-height:1.5;cursor:pointer;text-align:left;width:100%;position:relative;opacity:0;transform:translateY(14px);transition:transform .2s,box-shadow .2s,border-color .2s}
+.scene.on .card{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}@keyframes up{to{opacity:1;transform:none}}
+.card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.22)}.card:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.card.sel{border-color:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.35)}.card.ok{border-color:var(--g)}.card.ng{border-color:#111;border-style:dashed;animation:shake .45s both}
+.card.ok::after{content:"맞음";position:absolute;right:8px;top:-9px;background:var(--g);color:#fff;font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px}
+.card.ng::after{content:"다시";position:absolute;right:8px;top:-9px;background:#111;color:#fff;font-size:10.5px;font-weight:800;border-radius:5px;padding:1px 6px}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+.done .card{cursor:default;animation:none;opacity:1;transform:none}
+/* F 순서 — 타임라인 */
+.tl{display:grid;gap:10px}.oitem{display:flex;gap:12px;align-items:center}.oitem .num{flex:0 0 32px;height:32px;border-radius:50%;border:2px dashed rgba(0,0,0,.25);display:grid;place-items:center;font-weight:900;font-size:13px;color:#8A8A8A;transition:transform .25s,background .25s}
+.oitem.on .num{background:var(--g);color:#fff;border-color:var(--g);transform:scale(1.08)}.oitem.on{background:var(--sky)}
+/* E 짝 — 두 열 */
+.match{display:grid;grid-template-columns:1fr 1fr;gap:12px}.mcol{display:flex;flex-direction:column;gap:10px}
+.mc{display:flex;gap:12px;align-items:center;min-height:96px}.mc img{flex:0 0 150px;width:150px;aspect-ratio:16/10;object-fit:cover;border-radius:8px;border:3px solid var(--g)}
+.mc .lb{font-weight:700}.mc .bg2{position:absolute;top:-10px;left:-10px;width:26px;height:26px;border-radius:50%;background:var(--g);color:#fff;font-weight:800;font-size:13px;display:none;place-items:center;z-index:2}
+.mc.linked .bg2{display:grid}.mc.linked{background:var(--sky)}.mc .rt{display:none;font-size:12.5px;color:#5F5F5F;font-weight:600}.done .mc .rt{display:block;margin-top:4px}
+.beam{position:fixed;height:3px;background:linear-gradient(90deg,transparent,#fff,transparent);pointer-events:none;z-index:50;transform-origin:0 50%;transform:rotate(var(--a)) scaleX(0);animation:beam .6s ease-out forwards}
+@keyframes beam{from{opacity:0;transform:rotate(var(--a)) scaleX(0)}40%{opacity:1}to{opacity:0;transform:rotate(var(--a)) scaleX(1)}}
+/* B/G 선택 */
+.pgchip{display:inline-flex;background:rgba(255,255,255,.14);color:#fff;font-weight:700;font-size:12.5px;border-radius:999px;padding:3px 11px;margin-bottom:8px}
+.scr{font-weight:800;font-size:17px;margin:0 0 10px;padding-left:10px;border-left:4px solid #fff}
+.qq{font-weight:800;font-size:16.5px;margin:0 0 10px}
+.opt{display:flex;gap:10px;align-items:flex-start;width:100%;text-align:left;background:rgba(255,255,255,.96);color:#111;border:2px solid transparent;border-radius:12px;padding:11px 14px;margin:7px 0;font:inherit;font-size:14.5px;line-height:1.5;cursor:pointer;transition:transform .2s,border-color .2s,opacity .3s;opacity:0;transform:translateY(10px)}
+.scene.on .opt{animation:up .45s cubic-bezier(.2,.8,.2,1) forwards}.opt .m{flex:0 0 26px;height:26px;border-radius:8px;background:var(--sky);color:var(--dg);display:grid;place-items:center;font-weight:800;font-size:12px}
+.opt:hover{transform:translateY(-2px)}.opt:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.done .opt{cursor:default;transform:none;animation:none;opacity:1}.done .opt.dim{opacity:.38}.done .opt.ok{border-color:var(--g);transform:scale(1.015)}.done .opt.ok .m{background:var(--g);color:#fff}.done .opt.ng{border-color:#111;border-style:dashed;animation:shake .45s both}
+.fb{margin-top:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:14px 16px;opacity:0;transform:translateY(14px);transition:opacity .4s,transform .5s;pointer-events:none}
+.show .fb{opacity:1;transform:none;pointer-events:auto}.tag{display:inline-block;background:#fff;color:var(--dg);font-weight:800;font-size:12px;border-radius:6px;padding:3px 9px;margin-right:8px}.tag.ng{background:rgba(255,255,255,.25);color:#fff}
+.fb .ex{margin-top:8px;font-size:14.5px;line-height:1.65}.fb .bs{margin-top:6px;font-size:12.5px;color:rgba(255,255,255,.82)}.fb .next{margin-top:12px;font-size:14px;padding:10px 18px}
+.ansbox{margin-top:10px;background:rgba(255,255,255,.1);border-radius:9px;padding:10px 14px;font-size:13.5px}.ansbox b{display:block;margin-bottom:4px}.ansbox ol,.ansbox ul{margin:0;padding-left:20px}.ansbox li{margin:3px 0}
+.ctrl{display:flex;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}.hintx{color:rgba(255,255,255,.75);font-size:13px}.disc{margin:10px 0 0;color:rgba(255,255,255,.78);font-size:12.5px}
+.res{text-align:center}.ring{width:170px;height:170px;margin:0 auto 12px;position:relative}.ring svg{transform:rotate(-90deg)}.ring circle{fill:none;stroke-width:12}.ring .tr{stroke:rgba(255,255,255,.15)}.ring .pr{stroke:#fff;stroke-linecap:round;stroke-dasharray:440;stroke-dashoffset:440;transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)}
+.ring .n{position:absolute;inset:0;display:grid;place-items:center;font-size:42px;font-weight:900}.ring .n small{display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,.7)}
+.recap{display:grid;gap:8px;text-align:left;margin:0 auto 20px;max-width:620px}.recap div{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;font-size:14px;opacity:0}.scene.on .recap div{animation:up .5s forwards}.recap b{flex:0 0 auto;border-radius:8px;padding:2px 8px;font-size:12px;background:#fff;color:var(--dg)}
+.links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}.links a,.links button{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45);border-radius:11px;padding:10px 16px;font:inherit;font-weight:700;font-size:14px;text-decoration:none;cursor:pointer}.links .pri{background:#fff;color:var(--dg);border-color:#fff}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}.card,.opt,.recap div{opacity:1!important;transform:none!important}.beam{display:none}}
+html.nomo *,html.nomo *::before,html.nomo *::after{animation:none!important;transition:none!important}html.nomo .card,html.nomo .opt,html.nomo .recap div{opacity:1!important;transform:none!important}html.nomo .beam{display:none}html.nomo .scene{transform:none!important}
+@media(max-width:720px){.match{grid-template-columns:1fr}.mc img{flex:0 0 110px;width:110px}.hud .steps{display:none}.scene{inset:60px 12px 12px}}
+</style></head><body>
+<div class="bg" aria-hidden="true"><i></i><i></i></div>
+<header class="hud"><span class="k">SOC 2026 · 실습 · 2일-⑧</span><div class="bar"><i></i></div><div class="steps"><span>166쪽</span><span>167쪽</span><span>168쪽</span><span>169쪽</span><span>170쪽</span><span>171쪽</span></div><button class="mbtn" type="button" aria-pressed="false">움직임 끄기</button></header>
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+<section class="scene on" id="s0"><div class="inner" tabindex="-1"><span class="chip">CHAPTER 15</span><h1>우리 기관의 관제 범위</h1><p class="lead">화면을 순서대로 넘기며 쪽마다 알맞은 답을 고릅니다. 적는 칸은 없습니다.</p>
+<p class="disc">입력은 어디에도 저장되지 않습니다</p><button class="go" type="button" id="start">시작하기</button></div></section>
+<section class="scene" id="s1" data-kind="pick" data-spec="{&quot;t&quot;: &quot;통보를 받으면 무엇을 먼저 보나&quot;, &quot;qs&quot;: [{&quot;o&quot;: [&quot;업무에 영향이 있나 · 번질 수 있나&quot;, &quot;건수가 많은가 · 오래됐는가&quot;, &quot;외부에서 왔는가 · 내부에서 왔는가&quot;, &quot;원인이 밝혀졌는가 · 피해액이 큰가&quot;]}], &quot;e&quot;: &quot;업무 영향은 「지금 멈춘 것이 있나 · 곧 멈출 수 있나」, 번질 가능성은 「한 대에서 끝날 일인가 · 옆으로 갈 수 있는가」를 본다.&quot;, &quot;b&quot;: &quot;현행 15장 166쪽 · RFCH13-002&quot;}"><div class="inner" tabindex="-1"><h2>통보를 받으면 무엇을 먼저 보나</h2><p class="lead">화면을 보고 알맞은 답을 고릅니다.</p><div class="qbox" data-a="0"><span class="pgchip">166쪽</span><p class="qq">Q1. 한꺼번에 여러 건이 왔을 때 순서를 정하는 「두 축」은?</p><button type="button" class="opt" data-k="0"><span class="m">①</span><span>업무에 영향이 있나 · 번질 수 있나</span></button><button type="button" class="opt" data-k="1"><span class="m">②</span><span>건수가 많은가 · 오래됐는가</span></button><button type="button" class="opt" data-k="2"><span class="m">③</span><span>외부에서 왔는가 · 내부에서 왔는가</span></button><button type="button" class="opt" data-k="3"><span class="m">④</span><span>원인이 밝혀졌는가 · 피해액이 큰가</span></button></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene" id="s2" data-kind="pick" data-spec="{&quot;t&quot;: &quot;오탐을 어떻게 다루나&quot;, &quot;qs&quot;: [{&quot;o&quot;: [&quot;줄이는 쪽과 견디는 쪽 · 오탐이 없는 상태를 만든다&quot;, &quot;줄이는 쪽과 견디는 쪽 · 오탐을 감당할 수 있는 상태를 만든다&quot;, &quot;막는 쪽과 알리는 쪽 · 알림을 없앤다&quot;, &quot;조이는 쪽과 푸는 쪽 · 탐지 조건을 최대로 조인다&quot;]}], &quot;e&quot;: &quot;탐지 조건을 느슨하게 하면 놓치는 것이 늘 수 있고 조이면 오탐이 늘 수 있다. 줄이는 쪽은 반복 원인을 기록하고, 조건을 바꿀지는 담당자와 영향을 함께 검토해 정한 뒤 바꾼 내용과 이유를 남긴다. 견디는 쪽은 남는 오탐의 알림을 누가 보는지 정해 둔다.&quot;, &quot;b&quot;: &quot;현행 15장 167쪽 · RFCH13-003&quot;}"><div class="inner" tabindex="-1"><h2>오탐을 어떻게 다루나</h2><p class="lead">화면을 보고 알맞은 답을 고릅니다.</p><div class="qbox" data-a="1"><span class="pgchip">167쪽</span><p class="qq">Q1. 오탐을 다루는 「두 갈래」와 그 목표로 옳은 것은?</p><button type="button" class="opt" data-k="0"><span class="m">①</span><span>줄이는 쪽과 견디는 쪽 · 오탐이 없는 상태를 만든다</span></button><button type="button" class="opt" data-k="1"><span class="m">②</span><span>줄이는 쪽과 견디는 쪽 · 오탐을 감당할 수 있는 상태를 만든다</span></button><button type="button" class="opt" data-k="2"><span class="m">③</span><span>막는 쪽과 알리는 쪽 · 알림을 없앤다</span></button><button type="button" class="opt" data-k="3"><span class="m">④</span><span>조이는 쪽과 푸는 쪽 · 탐지 조건을 최대로 조인다</span></button></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene" id="s3" data-kind="pick" data-spec="{&quot;t&quot;: &quot;무엇을 얼마나 남기나&quot;, &quot;qs&quot;: [{&quot;o&quot;: [&quot;무슨 일이 있었나 · 우리가 무엇을 했나 · 언제 — 기간과 대상은 적용 규정·계약·담당 부서가 정한다&quot;, &quot;원인 · 조치 · 결과 — 보존 기간은 관제 담당이 정한다&quot;, &quot;대상 · 시각 · 담당 — 기록은 사고가 끝나면 지운다&quot;, &quot;확인된 것 · 미확인 · 필요한 도움 — 보존은 하지 않아도 된다&quot;]}], &quot;e&quot;: &quot;각 항목에 시각을 붙인다. 기록이 없는 기간은 확인할 수 없다. 사고가 나면 자동 삭제를 멈출지 누가 판단하는지도 정해 두어야 한다.&quot;, &quot;b&quot;: &quot;현행 15장 168쪽 · RFCH13-004&quot;}"><div class="inner" tabindex="-1"><h2>무엇을 얼마나 남기나</h2><p class="lead">화면을 보고 알맞은 답을 고릅니다.</p><div class="qbox" data-a="0"><span class="pgchip">168쪽</span><p class="qq">Q1. 초기 보고 뒤 「남기는 것 세 가지」와 보존에 대한 설명으로 옳은 것은?</p><button type="button" class="opt" data-k="0"><span class="m">①</span><span>무슨 일이 있었나 · 우리가 무엇을 했나 · 언제 — 기간과 대상은 적용 규정·계약·담당 부서가 정한다</span></button><button type="button" class="opt" data-k="1"><span class="m">②</span><span>원인 · 조치 · 결과 — 보존 기간은 관제 담당이 정한다</span></button><button type="button" class="opt" data-k="2"><span class="m">③</span><span>대상 · 시각 · 담당 — 기록은 사고가 끝나면 지운다</span></button><button type="button" class="opt" data-k="3"><span class="m">④</span><span>확인된 것 · 미확인 · 필요한 도움 — 보존은 하지 않아도 된다</span></button></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene" id="s4" data-kind="pick" data-spec="{&quot;t&quot;: &quot;어디로 언제 알리나&quot;, &quot;qs&quot;: [{&quot;o&quot;: [&quot;네 칸 모두 기관 안에서 정한다&quot;, &quot;앞의 두 칸은 기관 안의 일이고 · 뒤의 두 칸은 규정이 정하는 일이다&quot;, &quot;관제 담당이 신고까지 직접 한다&quot;, &quot;신고 기한은 모든 기관이 같다&quot;]}], &quot;e&quot;: &quot;알아챈 사람 → 기관 안의 창구 → 담당 부서가 적용 여부와 기한을 확인 → 필요한 신고·보고. 신고 요건과 기한은 기관마다 달라 이 자리에서 정할 수 없다. 외울 것은 창구 이름이 아니라 우리 기관의 답을 적어 두는 일이다.&quot;, &quot;b&quot;: &quot;현행 15장 169쪽 · RFCH13-005&quot;}"><div class="inner" tabindex="-1"><h2>어디로 언제 알리나</h2><p class="lead">화면을 보고 알맞은 답을 고릅니다.</p><div class="qbox" data-a="1"><span class="pgchip">169쪽</span><p class="qq">Q1. 「알아챈 것이 가는 길」 네 칸에 대한 설명으로 옳은 것은?</p><button type="button" class="opt" data-k="0"><span class="m">①</span><span>네 칸 모두 기관 안에서 정한다</span></button><button type="button" class="opt" data-k="1"><span class="m">②</span><span>앞의 두 칸은 기관 안의 일이고 · 뒤의 두 칸은 규정이 정하는 일이다</span></button><button type="button" class="opt" data-k="2"><span class="m">③</span><span>관제 담당이 신고까지 직접 한다</span></button><button type="button" class="opt" data-k="3"><span class="m">④</span><span>신고 기한은 모든 기관이 같다</span></button></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene" id="s5" data-kind="pick" data-spec="{&quot;t&quot;: &quot;계약에 무엇이 적혀 있나&quot;, &quot;qs&quot;: [{&quot;o&quot;: [&quot;얼마에 맡겼나 · 언제까지인가&quot;, &quot;이 범위는 누가 정하나 · 언제 다시 점검하나&quot;, &quot;담당자는 누구인가 · 연락처는 무엇인가&quot;, &quot;몇 명이 일하나 · 어디서 일하나&quot;]}], &quot;e&quot;: &quot;다섯 가지는 범위 · 보고 주기 · 연락 체계 · 제외 항목 · 기록 요청 경로다. 「보지 않는다」고 적힌 것이 어디인지 아는 것이 보는 것을 아는 것만큼 중요하다. 이것은 위탁사를 의심하는 일이 아니라 함께 범위를 맞추는 일이다.&quot;, &quot;b&quot;: &quot;현행 15장 170쪽 · RFCH13-006&quot;}"><div class="inner" tabindex="-1"><h2>계약에 무엇이 적혀 있나</h2><p class="lead">화면을 보고 알맞은 답을 고릅니다.</p><div class="qbox" data-a="1"><span class="pgchip">170쪽</span><p class="qq">Q1. 계약에서 확인할 다섯 가지에 공통으로 묻는 것은?</p><button type="button" class="opt" data-k="0"><span class="m">①</span><span>얼마에 맡겼나 · 언제까지인가</span></button><button type="button" class="opt" data-k="1"><span class="m">②</span><span>이 범위는 누가 정하나 · 언제 다시 점검하나</span></button><button type="button" class="opt" data-k="2"><span class="m">③</span><span>담당자는 누구인가 · 연락처는 무엇인가</span></button><button type="button" class="opt" data-k="3"><span class="m">④</span><span>몇 명이 일하나 · 어디서 일하나</span></button></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene" id="s6" data-kind="pick" data-spec="{&quot;t&quot;: &quot;계약 밖의 일은 누구에게&quot;, &quot;qs&quot;: [{&quot;o&quot;: [&quot;담당 부서에 올린다&quot;, &quot;계약 담당자에게 알린다&quot;, &quot;무엇을 · 언제 · 누구에게 물었나를 그 자리에서 기록하고 · 답을 받으면 그것도 기록한다&quot;, &quot;다음 정기 보고까지 모아 둔다&quot;]}], &quot;e&quot;: &quot;계약에 없는 일은 우리 기관이 판단할 일이라 담당 부서에 올리고, 계약에 있는데 안 된 일은 계약 이행 문제라 계약 담당자에게 알리며, 계약에 있는지 모르겠으면 먼저 계약을 확인한다. 셋 다 다음 자리가 있다.&quot;, &quot;b&quot;: &quot;현행 15장 171쪽 · RFCH13-007&quot;}"><div class="inner" tabindex="-1"><h2>계약 밖의 일은 누구에게</h2><p class="lead">화면을 보고 알맞은 답을 고릅니다.</p><div class="qbox" data-a="2"><span class="pgchip">171쪽</span><p class="qq">Q1. 「범위 밖처럼 보이는 일」 세 갈래가 공통으로 하는 것은?</p><button type="button" class="opt" data-k="0"><span class="m">①</span><span>담당 부서에 올린다</span></button><button type="button" class="opt" data-k="1"><span class="m">②</span><span>계약 담당자에게 알린다</span></button><button type="button" class="opt" data-k="2"><span class="m">③</span><span>무엇을 · 언제 · 누구에게 물었나를 그 자리에서 기록하고 · 답을 받으면 그것도 기록한다</span></button><button type="button" class="opt" data-k="3"><span class="m">④</span><span>다음 정기 보고까지 모아 둔다</span></button></div><div class="fb" role="status" aria-live="polite"></div></div></section>
+<section class="scene res" id="s7"><div class="inner" tabindex="-1"><div class="ring"><svg viewBox="0 0 160 160" width="170" height="170"><circle class="tr" cx="80" cy="80" r="70"/><circle class="pr" cx="80" cy="80" r="70"/></svg><div class="n" aria-hidden="true"><div><span>0</span><small></small></div></div><p class="sr"></p></div>
+<h2>우리 기관의 관제 범위</h2><p class="lead" style="text-align:center">「우리 일이 아닌 것 같다」에서 멈추지 않는다 · 셋 다 다음 자리가 있다.</p><div class="recap"></div><div class="links"><button class="again pri" type="button">다시 하기</button><a href="SOC2026_practice_ch15.html">기본형 실습으로</a><a href="SOC2026_quiz_ch15_motion.html">이 장 퀴즈(모션)</a></div></div></section>
+<script>
+(function(){
+ var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+ var scenes=$$('.scene'), cur=0, score={ok:0,total:0}, log=[], N=scenes.length-2;
+ var nomo=function(){return document.documentElement.classList.contains('nomo')};
+ var OSR=matchMedia('(prefers-reduced-motion: reduce)').matches, mb=$('.mbtn');
+ function store(v){try{sessionStorage.setItem('soc.nomo',v?'1':'0');}catch(e){}} function stored(){try{return sessionStorage.getItem('soc.nomo');}catch(e){return null;}}
+ if(OSR){document.documentElement.classList.add('nomo');mb.disabled=true;mb.textContent='움직임 꺼짐 · 시스템 설정';mb.setAttribute('aria-pressed','true');}
+ else{ if(stored()==='1')document.documentElement.classList.add('nomo');
+   var syncM=function(){mb.textContent=nomo()?'움직임 켜기':'움직임 끄기';mb.setAttribute('aria-pressed',nomo());};
+   mb.addEventListener('click',function(){var off=document.documentElement.classList.toggle('nomo');store(off);syncM();}); syncM(); }
+ var ft=null; function focusLater(sel,ms){ if(ft)clearTimeout(ft); ft=setTimeout(function(){var el=$(sel); if(el&&el.closest('.scene.on'))el.focus({preventScroll:true});},ms); }
+ function show(k){ cur=k; scenes.forEach(function(s,j){s.classList.toggle('out',j<k);s.classList.toggle('on',j===k);});
+   $('.hud .bar i').style.width=(Math.max(0,k-1)/N*100)+'%'; $$('.hud .steps span').forEach(function(s,j){s.classList.toggle('on',j===k-1);});
+   var sc=$('.scene.on'); if(sc)sc.scrollTop=0; focusLater('.scene.on .inner',60); }
+ function finish(sec,title,ok,n,expl,basis,extra){
+   score.ok+=ok; score.total+=n; log.push({t:title,ok:ok,n:n});
+   $('.fb',sec).innerHTML='<span class="tag'+(ok===n?'':' ng')+'">'+ok+' / '+n+' 맞음</span><div class="ex">'+expl+'</div>'+(extra||'')+'<div class="bs">근거 · '+basis+'</div><button class="next" type="button">다음 →</button>';
+   sec.classList.add('done','show'); $$('.go,.card,.opt,.oitem,.mc',sec).forEach(function(el){el.disabled=true;});
+   $('#live').textContent=title+' — '+ok+' / '+n+' 맞음';
+   $('.next',sec).addEventListener('click',function(){ var nx=this; if(nx.dataset.used)return; nx.dataset.used='1'; nx.disabled=true; var k=cur+1; show(k); if(k===N+1)result(); }); focusLater('.scene.on .next',300);
+ }
+ // F 순서
+ $$('.scene[data-kind="order"]').forEach(function(sec){
+   var seq=[], items=$$('.oitem',sec), g=$('.go',sec), spec=JSON.parse(sec.dataset.spec);
+   function paint(){ items.forEach(function(b){var k=seq.indexOf(b.dataset.i); b.classList.toggle('on',k>=0); $('.num',b).textContent=k>=0?(k+1):'·';}); g.disabled=seq.length!==items.length; }
+   items.forEach(function(b){ b.addEventListener('click',function(){ if(sec.classList.contains('done'))return; var k=seq.indexOf(b.dataset.i); if(k>=0)seq.splice(k,1); else seq.push(b.dataset.i); paint();
+     $('#live').textContent=b.textContent.trim()+(k>=0?' — 순서에서 뺌':' — '+seq.length+'번째'); }); });
+   g.addEventListener('click',function(){ if(sec.classList.contains('done'))return; var ok=0; seq.forEach(function(id,k){var b=$('.oitem[data-i="'+id+'"]',sec); var r=(+id===k); if(r)ok++; b.classList.add(r?'ok':'ng');});
+     var rows='<div class="ansbox"><b>올바른 순서</b><ol>'+spec.items.map(function(t){return '<li>'+t+'</li>';}).join('')+'</ol></div>';
+     finish(sec,spec.t,ok,items.length,spec.e,spec.b,rows); }); paint();
+ });
+ // B / G 선택
+ $$('.scene[data-kind="pick"]').forEach(function(sec){
+   var spec=JSON.parse(sec.dataset.spec), boxes=$$('.qbox',sec), done=0, ok=0;
+   boxes.forEach(function(box,qi){ var a=+box.dataset.a;
+     $$('.opt',box).forEach(function(b){ b.addEventListener('click',function(){ if(box.classList.contains('done'))return; var k=+b.dataset.k, r=(k===a); if(r)ok++; done++;
+       $$('.opt',box).forEach(function(o,j){o.classList.toggle('ok',j===a);o.classList.toggle('ng',j===k&&!r);o.classList.toggle('dim',j!==a&&j!==k);o.disabled=true;}); box.classList.add('done');
+       $('#live').textContent='Q'+(qi+1)+' '+(r?'맞음':'다시')+' — 정답은 '+MK[a]+' '+spec.qs[qi].o[a];
+       var nb=boxes[qi+1]; if(nb){nb.hidden=false; nb.style.opacity='1'; if(ft)clearTimeout(ft); ft=setTimeout(function(){var el=nb.querySelector('.opt'); if(el){el.focus(); el.scrollIntoView({block:'nearest',behavior:nomo()?'auto':'smooth'});}},60);}
+       if(done===boxes.length) finish(sec,spec.t,ok,boxes.length,spec.e,spec.b,''); }); }); });
+ });
+ var MK=["①","②","③","④","⑤"];
+ // E 짝 — 번호 배지 + 빛줄기
+ $$('.scene[data-kind="match"]').forEach(function(sec){
+   var sel=null, map={}, spec=JSON.parse(sec.dataset.spec), g=$('.go',sec), nL=$$('.mc[data-s="L"]',sec).length;
+   function card(s,i){return $('.mc[data-s="'+s+'"][data-i="'+i+'"]',sec);}
+   function beam(a,b){ if(nomo())return; var ra=a.getBoundingClientRect(), rb=b.getBoundingClientRect(); var x1=ra.right-6,y1=ra.top+ra.height/2,x2=rb.left+6,y2=rb.top+rb.height/2;
+     var d=document.createElement('i'); d.className='beam'; var len=Math.hypot(x2-x1,y2-y1); d.style.left=x1+'px'; d.style.top=y1+'px'; d.style.width=len+'px'; d.style.setProperty('--a',Math.atan2(y2-y1,x2-x1)+'rad'); document.body.appendChild(d); setTimeout(function(){d.remove();},700); }
+   function paint(){ var n=0; $$('.mc',sec).forEach(function(c){c.classList.remove('linked');$('.bg2',c).textContent='';});
+     Object.keys(map).forEach(function(L){ n++; [card('L',L),card('R',map[L])].forEach(function(c){if(c){c.classList.add('linked');$('.bg2',c).textContent=n;}}); }); g.disabled=Object.keys(map).length!==nL; }
+   $$('.mc',sec).forEach(function(c){ c.addEventListener('click',function(){ if(sec.classList.contains('done'))return; var s=c.dataset.s,i=c.dataset.i,un=false;
+     Object.keys(map).forEach(function(L){ if((s==='L'&&L===i)||(s==='R'&&map[L]===i)){delete map[L];un=true;} });
+     if(un){ if(sel){sel.setAttribute('aria-pressed','false');sel=null;} paint(); $('#live').textContent='연결을 풀었습니다'; return; }
+     if(s==='L'){ if(sel)sel.setAttribute('aria-pressed','false'); sel=c; c.setAttribute('aria-pressed','true'); return; }
+     if(sel){ map[sel.dataset.i]=i; beam(sel,c); $('#live').textContent=$('.lb',sel).textContent+' ↔ '+$('span:last-of-type',c).textContent; sel.setAttribute('aria-pressed','false'); sel=null; paint(); } });
+     c.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();c.click();}}); });
+   g.addEventListener('click',function(){ if(sec.classList.contains('done'))return; var ok=0;
+     for(var i=0;i<nL;i++){ var L=card('L',i), r=(map[i]===''+i); if(r)ok++; L.classList.add(r?'ok':'ng'); var rt=$('.rt',L); if(rt)rt.textContent=(r?'맞음 · ':'다시 · ')+spec.R[i]; }
+     var rows='<div class="ansbox"><b>올바른 짝</b><ul>'+spec.L.map(function(l,i){return '<li>'+l+' <b>→</b> '+spec.R[i]+'</li>';}).join('')+'</ul></div>';
+     finish(sec,spec.t,ok,nL,spec.e,spec.b,rows); }); paint();
+ });
+ function result(){ var sec=scenes[N+1]; $('.sr',sec).textContent=score.total+'개 중 '+score.ok+'개 맞음'; $('#live').textContent='결과 — '+score.total+'개 중 '+score.ok+'개 맞음';
+   $('.recap',sec).innerHTML=log.map(function(l,j){return '<div style="animation-delay:'+(300+j*110)+'ms"><b>'+l.ok+'/'+l.n+'</b><span>'+l.t+'</span></div>';}).join('');
+   var el=$('.ring .n span',sec); $('.ring small',sec).textContent='/ '+score.total+' 맞음'; var off=440-440*(score.total?score.ok/score.total:0);
+   if(nomo()){ $('.pr',sec).style.strokeDashoffset=off; el.textContent=score.ok; return; }
+   setTimeout(function(){ $('.pr',sec).style.strokeDashoffset=off; var k=0, t=setInterval(function(){el.textContent=k; if(k>=score.ok)clearInterval(t); k++;},120); },200); }
+ $('#start').addEventListener('click',function(){show(1);}); $('.again').addEventListener('click',function(){location.reload();});
+ document.addEventListener('keydown',function(ev){ var sec=$('.scene.on[data-kind="pick"]'); if(!sec||!/^[1-5]$/.test(ev.key))return; var box=$$('.qbox',sec).filter(function(b){return !b.hidden&&!b.classList.contains('done')})[0]; if(!box)return; var o=$('.opt[data-k="'+(+ev.key-1)+'"]',box); if(o)o.click(); });
+ show(0);
+})();
+</script></body></html>

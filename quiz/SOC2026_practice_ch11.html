@@ -1,0 +1,209 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 실습(사건의 흐름) · 11장 쿠팡 — 두 기관의 조사 결과</title>
+<style>:root{--g:#8C3566;--dg:#661F49;--tint:#F4EBF0;--bd:#E2E6EB;--ter:#A3A3A3;}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}}
+html.nomo *,html.nomo *::before,html.nomo *::after{animation:none!important;transition:none!important}
+html.nomo{scroll-behavior:auto}
+body{margin:0;background:#F4F6F8;color:#111;
+ font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+ font-size:15px;line-height:1.65;-webkit-text-size-adjust:100%}
+.topbar{position:fixed;top:0;left:0;right:0;height:4px;background:rgba(0,0,0,.07);z-index:60}
+.topbar i{display:block;height:100%;width:0;background:var(--g);transition:width .15s}
+.motionbtn{position:fixed;right:14px;bottom:14px;z-index:60;background:#fff;border:1.5px solid var(--bd);
+ border-radius:999px;padding:8px 14px;font:inherit;font-size:13px;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.08)}
+.scene{min-height:auto;padding:56px 20px;display:flex;justify-content:center}
+.scene.alt{background:var(--tint)}
+.inner{width:100%;max-width:860px;opacity:0;transform:translateY(16px);transition:opacity .5s,transform .5s}
+.scene.in .inner,html.nomo .inner{opacity:1;transform:none}
+.cover{background:var(--dg);color:#fff;text-align:left}
+.cover .inner{max-width:860px}
+.kicker{font-size:13px;letter-spacing:.04em;color:rgba(255,255,255,.85);margin:0 0 10px}
+.cover h1{font-size:30px;line-height:1.3;margin:0 0 12px}
+.cover p{color:rgba(255,255,255,.9);margin:0 0 6px}
+.pgchip{display:inline-flex;align-items:center;background:var(--tint);color:var(--dg);font-weight:700;
+ font-size:12.5px;border-radius:999px;padding:3px 11px;margin-bottom:10px}
+.scene.alt .pgchip{background:#fff}
+h2.t{font-size:22px;line-height:1.35;margin:0 0 8px}
+p.lead{color:#5F5F5F;margin:0 0 16px}
+.card{background:#fff;border:1.5px solid var(--bd);border-radius:12px;padding:14px 16px}
+.scene.alt .card{background:#fff}
+.opt{display:flex;gap:9px;align-items:flex-start;border:1.5px solid var(--bd);border-radius:9px;
+ padding:10px 12px;margin:7px 0;cursor:pointer;background:#fff;font-size:14.5px;line-height:1.55}
+.opt:hover{border-color:var(--g)} .opt input{margin-top:3px;accent-color:var(--g)}
+.graded .opt{cursor:default}
+.graded .opt.is-answer{border-color:var(--g);border-width:2.5px;background:var(--tint)}
+.graded .opt.is-chosen:not(.is-answer){border-color:#111;border-style:dashed;border-width:2.5px}
+.oitem{position:relative;display:flex;gap:10px;align-items:center;border:1.5px solid var(--bd);
+ border-radius:10px;padding:11px 13px;margin:8px 0;background:#fff;cursor:pointer;
+ font:inherit;font-size:14.5px;line-height:1.55;text-align:left;width:100%}
+.oitem:hover{border-color:var(--g)} .oitem:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.oitem .num{flex:0 0 28px;height:28px;border-radius:50%;border:1.5px dashed var(--ter);
+ display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:var(--ter)}
+.oitem.on{background:var(--tint);border-color:var(--g)}
+.oitem.on .num{background:var(--g);color:#fff;border:0}
+.oitem.ok{border-color:var(--g);border-width:2.5px}
+.oitem.ng{border-color:#111;border-style:dashed;border-width:2.5px}
+.mrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mc{position:relative;text-align:left;background:#fff;border:1.5px solid var(--bd);border-radius:11px;
+ padding:12px;cursor:pointer;font:inherit;font-size:14.5px;line-height:1.55;min-height:84px;
+ display:flex;align-items:center}
+.mc:hover{border-color:var(--g)} .mc:focus-visible{outline:3px solid var(--g);outline-offset:2px}
+.mc[aria-pressed="true"]{border-color:var(--g);box-shadow:0 0 0 3px var(--tint)}
+.mc.linked{background:var(--tint);border-color:var(--g)}
+.mc .bg2{position:absolute;top:-9px;left:-9px;width:25px;height:25px;border-radius:50%;background:var(--g);
+ color:#fff;font-weight:700;font-size:12.5px;display:none;align-items:center;justify-content:center}
+.mc.linked .bg2{display:flex}
+.mc.mok{border-color:var(--g);border-width:2.5px} .mc.mng{border-color:#111;border-style:dashed;border-width:2.5px}
+.vd{display:none;margin-top:12px;padding-top:12px;border-top:1px dashed var(--bd);font-size:13.5px;line-height:1.65}
+.graded .vd{display:block}
+.tg{display:inline-block;background:var(--g);color:#fff;font-weight:700;font-size:12px;border-radius:6px;
+ padding:2px 8px;margin-right:7px}
+.tg.ng{background:#111}
+.basis{margin-top:8px;color:#5F5F5F;font-size:12.5px}
+.ansbox{margin-top:10px;background:var(--tint);border-radius:9px;padding:10px 14px;font-size:13.5px}
+.ansbox b{display:block;margin-bottom:4px;color:var(--dg)}
+.ansbox ol,.ansbox ul{margin:0;padding-left:20px} .ansbox li{margin:3px 0}
+.gbtn.again{margin-top:12px;background:#fff;color:var(--dg);border:1.5px solid var(--g);font-size:14px;padding:8px 16px}
+.gbtn{margin-top:14px;background:var(--g);color:#fff;border:0;border-radius:10px;padding:11px 20px;
+ font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.gbtn[disabled]{opacity:.45;cursor:default}
+.hintx{color:#5F5F5F;font-size:13px;margin-top:8px}
+nav.ft{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:28px 20px 10px}
+nav.ft a{color:var(--dg);font-weight:700;text-decoration:none;font-size:14px}
+footer{text-align:center;color:#8A8A8A;font-size:12.5px;padding:8px 0 40px}
+@media(max-width:720px){.mrow{grid-template-columns:1fr}.scene{padding:40px 16px}.cover h1{font-size:25px}}
+@media print{.scene{page-break-inside:avoid}.motionbtn,.topbar{display:none}}
+</style></head><body>
+<div class="topbar"><i></i></div>
+<button class="motionbtn" type="button" aria-pressed="false">움직임 끄기</button>
+<section class="scene cover in"><div class="inner">
+<p class="kicker">SOC 2026 · 보안관제 입문 · 실습(사건의 흐름)</p>
+<h1>11장 쿠팡 — 두 기관의 조사 결과</h1>
+<p>과학기술정보통신부(2026-02-10)와 개인정보보호위원회(2026-06-11) 두 발표를 따라갑니다.</p><p>처음 알려 준 것은 장비가 아니라 이용자였다.</p>
+<p style="margin-top:14px;font-size:13px;color:rgba(255,255,255,.75)">
+발표된 사실만 다룹니다 · 원인이나 동기를 추측하지 않습니다 · 저장 없음 · 2일-④</p>
+</div></section>
+<section class="scene sc-pick alt" data-e="로그인은 한 번이고 그 뒤로는 받아 든 전자 출입증을 내민다. 도장은 「도장을 만드는 열쇠」로 찍는다. ⚠️ 이 쪽은 사건 시점이 아니라 구조 설명이다." data-b="현행 11장 110쪽 · RFCH12-003" data-a="1"><div class="inner"><span class="pgchip">110쪽</span><h2 class="t">전자 출입증이란 무엇인가 〔구조 설명〕</h2><p class="lead">관문 서버가 「확인한 것」과 「확인하지 않은 것」은?</p><div class="card"><label class="opt"><input type="radio" name="p1" value="0"><span>① 확인한 것 — 이 출입증이 정상 발급된 것인가 / 확인하지 않은 것 — 도장이 맞는가</span></label><label class="opt"><input type="radio" name="p1" value="1"><span>② 확인한 것 — 도장이 맞는가 / 확인하지 않은 것 — 이 출입증이 정상 발급된 것인가</span></label><label class="opt"><input type="radio" name="p1" value="2"><span>③ 둘 다 확인했다</span></label><label class="opt"><input type="radio" name="p1" value="3"><span>④ 둘 다 확인하지 않았다</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-pick" data-e="14장 「알리는 사람과 거두는 사람」·「끝났을 때 누가 정리하나」가 이 자리를 다룬다." data-b="현행 11장 111쪽 · RFCH12-004" data-a="1"><div class="inner"><span class="pgchip">111쪽</span><h2 class="t">열쇠를 아는 사람이 떠났다 〔구조 설명〕</h2><p class="lead">개인정보보호위원회가 확인한 것으로 111쪽이 적은 둘은?</p><div class="card"><label class="opt"><input type="radio" name="p2" value="0"><span>① 열쇠가 암호화돼 있었다 · 퇴사자 계정을 즉시 삭제했다</span></label><label class="opt"><input type="radio" name="p2" value="1"><span>② 업무상 열쇠를 볼 필요가 없는 사람도 열쇠를 평문으로 볼 수 있었다 · 그 사람이 퇴사했는데 열쇠를 갱신하지도 폐기하지도 않았다</span></label><label class="opt"><input type="radio" name="p2" value="2"><span>③ 열쇠를 정기적으로 갱신하고 있었다 · 접근 기록이 남아 있었다</span></label><label class="opt"><input type="radio" name="p2" value="3"><span>④ 열쇠를 외부에 위탁 보관하고 있었다 · 담당자가 둘이었다</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-pick alt" data-e="관문 서버가 확인한 것은 「도장이 맞는가」였고, 확인하지 않은 것은 「이 출입증이 정상 발급된 것인가」였다. 도장은 맞았으므로 통과했다." data-b="현행 11장 112쪽 · RFCH12-005" data-a="1"><div class="inner"><span class="pgchip">112쪽</span><h2 class="t">위조한 출입증이 통과했다 〔구조 설명〕</h2><p class="lead">112쪽이 「여기가 이 사건이다」라고 가리킨 자리는?</p><div class="card"><label class="opt"><input type="radio" name="p3" value="0"><span>① 관문 서버가 도장을 확인하지 못해 막지 못한 자리</span></label><label class="opt"><input type="radio" name="p3" value="1"><span>② 가지고 나간 열쇠로 도장을 찍어 전자 출입증을 만들어 냈고 · 관문 서버는 도장이 맞으므로 통과시킨 자리</span></label><label class="opt"><input type="radio" name="p3" value="2"><span>③ 이용자가 로그인을 여러 번 시도한 자리</span></label><label class="opt"><input type="radio" name="p3" value="3"><span>④ 서비스가 전자 출입증을 다시 발급한 자리</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-order" data-e="발표 당시 판단으로 정보통신망법의 24시간 기준을 넘겼다. 신고할 때는 4,536개 계정이었고 현장 조사 뒤에는 3,000만 개 이상 계정이었다 — 단위는 계정이다. 우리 기관의 신고 요건과 기한은 적용 법령·규정·계약과 담당 부서를 확인한다." data-b="현행 11장 115쪽 · RFCH12-008"><div class="inner"><span class="pgchip">115쪽</span><h2 class="t">이용자 제보로 시작됐다 · 인지에서 신고까지</h2><p class="lead">115쪽에 날짜가 적힌 세 장면입니다. 이른 것부터 놓으세요.</p><div class="card"><button type="button" class="oitem" data-i="0"><span class="num">·</span><span>2025년 11월 16일 · 의심스러운 이메일을 받았다는 고객의 소리 접수</span></button><button type="button" class="oitem" data-i="1"><span class="num">·</span><span>2025년 11월 17일 16시 · 정보보호 책임자에게 보고 — 인지 시점</span></button><button type="button" class="oitem" data-i="2"><span class="num">·</span><span>2025년 11월 19일 21시 35분 · 한국인터넷진흥원에 신고</span></button><p class="hintx">순서대로 누르면 번호가 붙습니다 · 다시 누르면 빠집니다</p><button class="gbtn" disabled>확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-pick alt" data-e="확정본은 개인정보보호위원회 2026년 6월 11일 발표(의결 6월 10일)다. 발표일과 유출 발생일은 다르다. 발표 당시까지 불법 유통 정황은 확인된 바 없으나 악용 우려가 있다고 밝혔다." data-b="현행 11장 113쪽 · RFCH12-006" data-a="2"><div class="inner"><span class="pgchip">113쪽</span><h2 class="t">무엇이 얼마나 나갔나</h2><p class="lead">113쪽의 수를 읽을 때 지켜야 할 것은?</p><div class="card"><label class="opt"><input type="radio" name="p5" value="0"><span>① 페이지별 인원을 모두 더해 전체 규모를 구한다</span></label><label class="opt"><input type="radio" name="p5" value="1"><span>② 「약」과 「최소」를 떼고 숫자만 기억한다</span></label><label class="opt"><input type="radio" name="p5" value="2"><span>③ 페이지별 인원을 더하지 않는다 — 같은 사람이 겹칠 수 있다 · 「약」·「최소」와 집계 기준은 수와 한 덩어리다</span></label><label class="opt"><input type="radio" name="p5" value="3"><span>④ 발표일을 유출 발생일로 본다</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-pick" data-e="공격 기간 동안 개인정보가 담긴 페이지의 접속량이 평상시보다 크게 늘었다. 유출 이후의 별도 단계가 아니다." data-b="현행 11장 114쪽 · RFCH12-007" data-a="1"><div class="inner"><span class="pgchip">114쪽</span><h2 class="t">이상 징후는 있었다 · 알아채지 못했다</h2><p class="lead">114쪽의 이상 징후가 나타난 시기는?</p><div class="card"><label class="opt"><input type="radio" name="p6" value="0"><span>① 유출이 끝난 뒤</span></label><label class="opt"><input type="radio" name="p6" value="1"><span>② 공격 기간 동안</span></label><label class="opt"><input type="radio" name="p6" value="2"><span>③ 신고한 뒤</span></label><label class="opt"><input type="radio" name="p6" value="3"><span>④ 조사가 시작된 뒤</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-match alt" data-e="정부가 자료를 그대로 보존하라고 명령했다. 그 기간에 유출된 배송지 정보는 누가 당했는지 특정하지 못했다. 우리 기관은 무엇을 얼마나 보존하나 · 자동 삭제를 멈추는 판단은 누가 하나." data-b="현행 11장 116쪽 · RFCH12-009"><div class="inner"><span class="pgchip">116쪽</span><h2 class="t">조사 중에 기록이 지워졌다</h2><p class="lead">삭제된 방식과 그로 인해 어려워진 것을 이으세요. (날짜 순서가 아니라 원인과 결과입니다.)</p><div class="card"><div class="mrow"><div><button type="button" class="mc" data-s="L" data-i="0" aria-pressed="false"><span class="bg2"></span><span>손으로 지움 — 웹 접속기록 약 다섯 달분</span></button><button type="button" class="mc" data-s="L" data-i="1" aria-pressed="false"><span class="bg2"></span><span>자동으로 지워짐 — 앱 접속기록, 여섯 달이 지나면 지우는 정책을 멈추지 않음</span></button></div><div><button type="button" class="mc" data-s="R" data-i="1" aria-pressed="false"><span class="bg2"></span><span>유출 규모와 피해 범위를 확인하기 어려워졌다</span></button><button type="button" class="mc" data-s="R" data-i="0" aria-pressed="false"><span class="bg2"></span><span>최초 유출 시점을 밝히기 어려워졌다</span></button></div></div><p class="hintx">왼쪽을 누른 뒤 오른쪽을 누르면 이어집니다 · 다시 누르면 풀립니다</p><button class="gbtn" disabled>확인하기</button><div class="vd"></div></div></div></section><section class="scene sc-pick" data-e="열쇠는 한쪽은 평문으로 저장돼 있었고 한쪽은 평문으로 볼 수 있었다. 무엇을 보고 알았나 — 한쪽은 나가는 통신량이 평소와 달랐고, 한쪽은 고객이 알려 주었다. 신고는 둘 다 24시간 기준을 넘겼다(발표 당시 조사기관 판단)." data-b="현행 11장 119쪽 · RFCH12-012" data-a="1"><div class="inner"><span class="pgchip">119쪽</span><h2 class="t">두 사건을 나란히 놓고</h2><p class="lead">119쪽이 두 사건의 「빈 자리」로 나란히 놓은 것은?</p><div class="card"><label class="opt"><input type="radio" name="p8" value="0"><span>① 두 곳 모두 보호 장비를 두지 않았다는 점</span></label><label class="opt"><input type="radio" name="p8" value="1"><span>② SK텔레콤은 기록을 끝까지 보지 않았고 · 쿠팡은 출입증이 정상 발급됐는지 보지 않았다</span></label><label class="opt"><input type="radio" name="p8" value="2"><span>③ 두 곳 모두 백업을 만들어 두지 않았다는 점</span></label><label class="opt"><input type="radio" name="p8" value="3"><span>④ 두 곳 모두 외부 업체의 과실에서 비롯됐다는 점</span></label><button class="gbtn">확인하기</button><div class="vd"></div></div></div></section>
+<nav class="ft"><a href="SOC2026_practice_ch10.html">← 이전 실습 10장</a><a href="SOC2026_practice_ch12.html">다음 실습 12장 →</a></nav><footer>SOC 2026 · 보안관제 입문</footer>
+<script>
+(function(){
+ var $=function(s,r){return (r||document).querySelector(s)},
+     $$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+ if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+   document.documentElement.classList.add('nomo');
+ var mb=$('.motionbtn');
+ mb.addEventListener('click',function(){
+   var off=document.documentElement.classList.toggle('nomo');
+   mb.textContent=off?'움직임 켜기':'움직임 끄기'; mb.setAttribute('aria-pressed',off?'true':'false');
+ });
+ if(document.documentElement.classList.contains('nomo')){mb.textContent='움직임 켜기';mb.setAttribute('aria-pressed','true');}
+ var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)e.target.classList.add('in');});},
+   {threshold:.12});
+ $$('.scene').forEach(function(s){io.observe(s);});
+ addEventListener('scroll',function(){
+   var h=document.documentElement.scrollHeight-innerHeight;
+   $('.topbar i').style.width=(h>0?(scrollY/h*100):0)+'%';
+ },{passive:true});
+
+ // ── 순서 맞추기 ──
+ $$('.sc-order').forEach(function(sec){
+   var seq=[];
+   function paint(){
+     $$('.oitem',sec).forEach(function(b){
+       var k=seq.indexOf(b.dataset.i);
+       b.classList.toggle('on',k>=0);
+       b.querySelector('.num').textContent = k>=0 ? (k+1) : '·';
+     });
+     $('.gbtn',sec).disabled = seq.length!==$$('.oitem',sec).length;
+   }
+   $$('.oitem',sec).forEach(function(b){
+     b.addEventListener('click',function(){
+       if(sec.classList.contains('graded'))return;
+       var k=seq.indexOf(b.dataset.i);
+       if(k>=0) seq.splice(k,1); else seq.push(b.dataset.i);
+       paint();
+     });
+     b.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();b.click();}});
+   });
+   $('.gbtn',sec).addEventListener('click',function(){
+     var ok=0,n=seq.length;
+     seq.forEach(function(id,k){
+       var b=$('.oitem[data-i="'+id+'"]',sec);
+       var right=(+id===k); if(right)ok++;
+       b.classList.add(right?'ok':'ng');
+     });
+     var right='<div class="ansbox"><b>올바른 순서</b><ol>'+
+       $$('.oitem',sec).slice().sort(function(a,b){return a.dataset.i-b.dataset.i;})
+         .map(function(b){return '<li>'+b.querySelector('span:last-child').textContent+'</li>';}).join('')+'</ol></div>';
+     $('.vd',sec).innerHTML=(ok===n?'<span class="tg">모두 맞음</span>':'<span class="tg ng">'+ok+'/'+n+' 맞음</span>')
+       +sec.dataset.e+right+'<div class="basis">근거 · '+sec.dataset.b+'</div>'
+       +'<button class="gbtn again" type="button">다시 해 보기</button>';
+     sec.classList.add('graded'); this.disabled=true;
+     $('.again',sec).addEventListener('click',function(){location.reload();});
+   });
+   paint();
+ });
+
+ // ── 선택형 ──
+ $$('.sc-pick').forEach(function(sec){
+   var a=+sec.dataset.a;
+   $('.gbtn',sec).addEventListener('click',function(){
+     var ch=$('input:checked',sec), c=ch?+ch.value:-1;
+     $$('.opt',sec).forEach(function(o,k){
+       o.classList.toggle('is-answer',k===a); o.classList.toggle('is-chosen',k===c);
+       $('input',o).disabled=true;});
+     $('.vd',sec).innerHTML=(c===a?'<span class="tg">맞음</span>':(c<0?'<span class="tg ng">미응답</span>':'<span class="tg ng">다시</span>'))
+       +sec.dataset.e+'<div class="basis">근거 · '+sec.dataset.b+'</div>';
+     sec.classList.add('graded'); this.disabled=true;
+   });
+ });
+
+ // ── 짝 맞추기 ──
+ $$('.sc-match').forEach(function(sec){
+   var sel=null, map={};
+   function paint(){
+     var n=0;
+     $$('.mc',sec).forEach(function(c){c.classList.remove('linked');c.querySelector('.bg2').textContent='';});
+     Object.keys(map).forEach(function(L){ n++;
+       [$('.mc[data-s="L"][data-i="'+L+'"]',sec), $('.mc[data-s="R"][data-i="'+map[L]+'"]',sec)]
+         .forEach(function(e){if(e){e.classList.add('linked');e.querySelector('.bg2').textContent=n;}});
+     });
+     $('.gbtn',sec).disabled = Object.keys(map).length!==$$('.mc[data-s="L"]',sec).length;
+   }
+   $$('.mc',sec).forEach(function(c){
+     c.addEventListener('click',function(){
+       if(sec.classList.contains('graded'))return;
+       var s=c.dataset.s,i=c.dataset.i,un=false;
+       Object.keys(map).forEach(function(L){if((s==='L'&&L===i)||(s==='R'&&map[L]===i)){delete map[L];un=true;}});
+       if(un){if(sel){sel.setAttribute('aria-pressed','false');sel=null;}paint();return;}
+       if(s==='L'){if(sel)sel.setAttribute('aria-pressed','false');sel=c;c.setAttribute('aria-pressed','true');return;}
+       if(sel){map[sel.dataset.i]=i;sel.setAttribute('aria-pressed','false');sel=null;paint();}
+     });
+     c.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();c.click();}});
+   });
+   $('.gbtn',sec).addEventListener('click',function(){
+     var ok=0,n=$$('.mc[data-s="L"]',sec).length;
+     for(var i=0;i<n;i++){
+       var b=$('.mc[data-s="L"][data-i="'+i+'"]',sec), right=(map[i]===''+i);
+       if(right)ok++; b.classList.add(right?'mok':'mng');
+     }
+     var rows='';
+     for(var j=0;j<n;j++){
+       rows+='<li>'+$('.mc[data-s="L"][data-i="'+j+'"]',sec).querySelector('span:last-child').textContent
+            +' <b>→</b> '+$('.mc[data-s="R"][data-i="'+j+'"]',sec).querySelector('span:last-child').textContent+'</li>';
+     }
+     $('.vd',sec).innerHTML=(ok===n?'<span class="tg">모두 맞음</span>':'<span class="tg ng">'+ok+'/'+n+' 맞음</span>')
+       +sec.dataset.e+'<div class="ansbox"><b>올바른 짝</b><ul>'+rows+'</ul></div>'
+       +'<div class="basis">근거 · '+sec.dataset.b+'</div>'
+       +'<button class="gbtn again" type="button">다시 해 보기</button>';
+     sec.classList.add('graded'); this.disabled=true;
+     $('.again',sec).addEventListener('click',function(){location.reload();});
+   });
+   paint();
+ });
+})();
+</script></body></html>

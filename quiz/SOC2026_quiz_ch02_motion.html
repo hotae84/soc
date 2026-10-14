@@ -1,0 +1,198 @@
+<!DOCTYPE html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SOC 2026 학습 퀴즈(모션) · 2장 최근 보안 동향과 기본 용어</title>
+<style>
+:root{--g:#2F8F4E;--dg:#1F6A38;--sky:#DDF1E3;--ink:#0B1630;--bd:#E2E6EB}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+ color:#fff;background:var(--ink);overflow:hidden;-webkit-text-size-adjust:100%}
+/* 배경 — 느리게 떠다니는 도형 */
+.bg{position:fixed;inset:0;overflow:hidden;background:
+ radial-gradient(1200px 700px at 15% 20%,rgba(47,143,78,.55),transparent 60%),
+ radial-gradient(900px 600px at 85% 80%,rgba(31,106,56,.6),transparent 60%),var(--ink)}
+.bg i:nth-child(4){width:9vmax;height:9vmax;left:18vw;bottom:14vh;animation-duration:16s;border-color:rgba(255,255,255,.14)}
+.bg i{position:absolute;border-radius:50%;border:1.5px solid rgba(255,255,255,.08);animation:drift 26s linear infinite}
+.bg i:nth-child(1){width:46vmax;height:46vmax;left:-12vmax;top:-10vmax}
+.bg i:nth-child(2){width:30vmax;height:30vmax;right:-8vmax;bottom:-12vmax;animation-duration:34s;animation-direction:reverse}
+.bg i:nth-child(3){width:14vmax;height:14vmax;right:22vw;top:12vh;animation-duration:20s;border-style:dashed}
+@keyframes drift{from{transform:rotate(0) translateX(1.2vmax) rotate(0)}to{transform:rotate(360deg) translateX(1.2vmax) rotate(-360deg)}}
+/* HUD */
+.hud{position:fixed;top:0;left:0;right:0;z-index:10;display:flex;align-items:center;gap:14px;padding:14px 18px;
+ font-size:13px;color:rgba(255,255,255,.78)}
+.hud .k{font-weight:700;letter-spacing:.04em}
+.hud .bar{flex:1;height:4px;background:rgba(255,255,255,.14);border-radius:2px;overflow:hidden}
+.hud .bar i{display:block;height:100%;width:0;background:#fff;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+.hud .dots{display:flex;gap:6px}.hud .dots b{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);transition:background .3s,transform .3s}
+.hud .dots b.on{background:#fff;transform:scale(1.25);animation:beat 1.6s ease-in-out infinite}
+@keyframes beat{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.45)}50%{box-shadow:0 0 0 6px rgba(255,255,255,0)}} .hud .dots b.done{background:rgba(255,255,255,.7)}
+.mbtn{background:transparent;color:rgba(255,255,255,.85);border:1.5px solid rgba(255,255,255,.35);border-radius:999px;
+ padding:6px 12px;font:inherit;font-size:12.5px;cursor:pointer}
+/* 장면 */
+.stage{position:fixed;inset:0;display:grid;place-items:center;padding:72px 20px 24px}
+.scene{position:absolute;inset:72px 20px 24px;display:flex;flex-direction:column;overflow:auto;-webkit-overflow-scrolling:touch;opacity:0;visibility:hidden;
+ transform:translateX(6vw) scale(.985);transition:opacity .45s,transform .55s cubic-bezier(.2,.8,.2,1),visibility 0s .55s}
+.scene.on{opacity:1;visibility:visible;transform:none;transition:opacity .45s,transform .55s cubic-bezier(.2,.8,.2,1)}
+.scene.out{opacity:0;transform:translateX(-6vw)}
+.inner{width:min(860px,100%);outline:none;margin:auto;padding:4px 0;position:relative}
+/* 인트로 */
+.intro .chip{display:inline-block;background:rgba(255,255,255,.12);border-radius:999px;padding:5px 12px;font-size:13px;margin-bottom:16px}
+.intro h1{font-size:clamp(26px,4.6vw,44px);line-height:1.25;margin:0 0 14px}
+.intro p{color:rgba(255,255,255,.82);font-size:16px;margin:0 0 26px;max-width:620px}
+.go{background:#fff;color:var(--dg);border:0;border-radius:14px;padding:14px 26px;font:inherit;font-weight:800;font-size:16px;cursor:pointer;
+ box-shadow:0 12px 30px rgba(0,0,0,.25);transition:transform .15s}
+.go:hover{transform:translateY(-2px)}
+/* 문항 */
+.qnum{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:13px;letter-spacing:.08em;color:rgba(255,255,255,.75);margin-bottom:10px}
+.qnum b{width:34px;height:34px;border-radius:10px;background:#fff;color:var(--dg);display:grid;place-items:center;font-size:14px}
+.qtext{font-size:clamp(21px,3.2vw,31px);line-height:1.38;margin:0 0 22px;font-weight:800;min-height:1.4em}
+.qtext .w{display:inline-block;opacity:0;transform:translateY(.6em)} .scene.on .qtext .w{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}
+@keyframes up{to{opacity:1;transform:none}}
+.opts{display:grid;gap:10px}
+.opt{position:relative;display:flex;gap:12px;align-items:flex-start;text-align:left;background:rgba(255,255,255,.96);color:#111;
+ border:2px solid transparent;border-radius:14px;padding:14px 16px;font:inherit;font-size:15.5px;line-height:1.5;cursor:pointer;
+ opacity:0;transform:translateY(14px);transition:transform .2s,box-shadow .2s,opacity .3s,border-color .2s}
+.scene.on .opt{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}
+.opt:hover{transform:translateY(-2px) scale(1.01);box-shadow:0 10px 24px rgba(0,0,0,.22)}
+.opt:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.opt .m{flex:0 0 30px;height:30px;border-radius:9px;background:var(--sky);color:var(--dg);display:grid;place-items:center;font-weight:800;font-size:13px}
+.opt .key{position:absolute;right:12px;top:10px;font-size:11px;color:#5F5F5F;border:1px solid #D9DEE5;border-radius:5px;padding:1px 6px}
+.q.answered .opt{cursor:default;transform:none;box-shadow:none;opacity:1;animation:none}
+.q.answered .opt.dim{opacity:.38}
+.q.answered .opt.ok{border-color:var(--g);box-shadow:0 0 0 4px rgba(255,255,255,.35),0 14px 30px rgba(0,0,0,.25);transform:scale(1.02);animation:glow .9s ease-out}
+@keyframes glow{0%{box-shadow:0 0 0 0 rgba(255,255,255,.8)}100%{box-shadow:0 0 0 4px rgba(255,255,255,.35),0 14px 30px rgba(0,0,0,.25)}}
+.spark{position:absolute;width:8px;height:8px;border-radius:50%;background:#fff;pointer-events:none;animation:spark .8s cubic-bezier(.2,.8,.2,1) forwards;z-index:5}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+.q.answered .opt.ok .m{background:var(--g);color:#fff}
+.q.answered .opt.ng{border-color:#111;border-style:dashed;animation:shake .45s cubic-bezier(.36,.07,.19,.97) both;opacity:1}
+@keyframes shake{10%,90%{transform:translateX(-2px)}20%,80%{transform:translateX(3px)}30%,50%,70%{transform:translateX(-5px)}40%,60%{transform:translateX(5px)}}
+.fb{margin-top:16px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:14px;padding:14px 16px;
+ opacity:0;transform:translateY(16px);transition:opacity .4s,transform .5s cubic-bezier(.2,.8,.2,1);pointer-events:none}
+.q.answered .fb{opacity:1;transform:none;pointer-events:auto}
+.fb .tag{display:inline-block;background:#fff;color:var(--dg);font-weight:800;font-size:12px;border-radius:6px;padding:3px 9px;margin-right:8px}
+.fb .tag.ng{background:rgba(255,255,255,.25);color:#fff}
+.fb .ex{margin-top:8px;font-size:14.5px;line-height:1.65;color:rgba(255,255,255,.92)}
+.fb .bs{margin-top:6px;font-size:12.5px;color:rgba(255,255,255,.82)}
+.fb .next{margin-top:12px;background:#fff;color:var(--dg);border:0;border-radius:11px;padding:10px 18px;font:inherit;font-weight:800;cursor:pointer}
+/* 결과 */
+.res{text-align:center}
+.ring{width:170px;height:170px;margin:0 auto 14px;position:relative}
+.ring svg{transform:rotate(-90deg)} .ring circle{fill:none;stroke-width:12}
+.ring .tr{stroke:rgba(255,255,255,.15)} .ring .pr{stroke:#fff;stroke-linecap:round;stroke-dasharray:440;stroke-dashoffset:440;transition:stroke-dashoffset 1.2s cubic-bezier(.2,.8,.2,1)}
+.ring .n{position:absolute;inset:0;display:grid;place-items:center;font-size:44px;font-weight:900}
+.ring .n small{display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,.7)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.res h2{font-size:clamp(22px,3vw,30px);margin:6px 0 8px}
+.res p{color:rgba(255,255,255,.82);margin:0 0 18px}
+.recap{display:grid;gap:8px;text-align:left;margin:0 auto 20px;max-width:620px}
+.recap div{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.08);border-radius:10px;padding:9px 12px;font-size:14px;
+ opacity:0;transform:translateY(10px)}
+.scene.on .recap div{animation:up .5s cubic-bezier(.2,.8,.2,1) forwards}
+.recap b{flex:0 0 26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:12px;background:#fff;color:var(--dg)}
+.recap b.ng{background:rgba(255,255,255,.2);color:#fff}
+.links{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.links a,.links button{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.45);border-radius:11px;padding:10px 16px;
+ font:inherit;font-weight:700;font-size:14px;text-decoration:none;cursor:pointer}
+.links .pri{background:#fff;color:var(--dg);border-color:#fff}
+/* 움직임 끄기 */
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}
+ .qtext .w,.opt,.recap div{opacity:1!important;transform:none!important}}
+html.nomo *,html.nomo *::before,html.nomo *::after{animation:none!important;transition:none!important}
+html.nomo .qtext .w,html.nomo .opt,html.nomo .recap div{opacity:1!important;transform:none!important}
+html.nomo .scene{transform:none!important}
+@media(max-width:600px){.hud{gap:10px;padding:12px}.hud .dots{display:none}.opt{font-size:14.5px;padding:12px 14px}.opt .key{display:none}
+ .scene{inset:64px 14px 16px}}
+</style></head><body>
+<div class="bg" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<header class="hud"><span class="k">SOC 2026 · 학습 퀴즈 · 1일-②</span><div class="bar"><i></i></div>
+<div class="dots" aria-hidden="true"><b></b><b></b><b></b><b></b><b></b></div><button class="mbtn" type="button" aria-pressed="false">움직임 끄기</button></header>
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+<main class="stage">
+<section class="scene intro on"><div class="inner" tabindex="-1"><span class="chip">CHAPTER 02</span>
+<h1>최근 보안 동향과 기본 용어</h1>
+<p>이 장에서 배운 것 5가지를 한 문항씩 묻습니다. 보기를 누르거나 숫자 키 1~5를 누르세요. 채점 뒤에 정답과 한 줄 해설이 열립니다.</p>
+<button class="go" type="button">시작하기</button></div></section>
+<section class="scene q" aria-label="문항 1"><div class="inner" tabindex="-1"><div class="qnum"><b>Q1</b>1 / 5</div><h2 class="qtext"></h2><div class="opts"></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene q" aria-label="문항 2"><div class="inner" tabindex="-1"><div class="qnum"><b>Q2</b>2 / 5</div><h2 class="qtext"></h2><div class="opts"></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene q" aria-label="문항 3"><div class="inner" tabindex="-1"><div class="qnum"><b>Q3</b>3 / 5</div><h2 class="qtext"></h2><div class="opts"></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene q" aria-label="문항 4"><div class="inner" tabindex="-1"><div class="qnum"><b>Q4</b>4 / 5</div><h2 class="qtext"></h2><div class="opts"></div><div class="fb" role="status" aria-live="polite"></div></div></section><section class="scene q" aria-label="문항 5"><div class="inner" tabindex="-1"><div class="qnum"><b>Q5</b>5 / 5</div><h2 class="qtext"></h2><div class="opts"></div><div class="fb" role="status" aria-live="polite"></div></div></section>
+<section class="scene res" aria-label="결과"><div class="inner" tabindex="-1">
+<div class="ring"><svg viewBox="0 0 160 160" width="170" height="170"><circle class="tr" cx="80" cy="80" r="70"/><circle class="pr" cx="80" cy="80" r="70"/></svg>
+<div class="n" aria-hidden="true"><div><span>0</span><small>/ 5 정답</small></div></div><p class="sr" role="status" aria-live="polite"></p></div>
+<h2>최근 보안 동향과 기본 용어</h2><p>틀린 문항은 해설의 근거 쪽을 교재에서 다시 봅니다.</p>
+<div class="recap"></div>
+<div class="links"><button class="again pri" type="button">다시 풀기</button>
+<a href="SOC2026_quiz_ch02.html">기본형 퀴즈로</a><a href="SOC2026_practice_ch02.html">이 장 실습으로</a></div>
+</div></section>
+</main>
+<script>window.DATA=[{"q": "사고 소식을 읽을 때 구분해서 보아야 할 것으로 2장에서 든 세 가지는?", "opts": ["기사를 쓴 기자 이름 · 기사를 실은 매체 · 기사의 조회수", "사건이 일어난 때 · 조사 결과가 나온 때 · 영향을 받는 사람", "쓰인 공격 도구 · 공격을 한 조직 · 집계된 피해 금액", "운영 중인 서버 대수 · 시간당 접속량 · 화면 응답 속도", "기사 제목의 표현 · 보도가 나간 시각 · 기사에 달린 댓글 수"], "ans": 1, "basis": "현행 2장 12쪽 · RFCH02-001", "expl": "사건이 일어난 때, 조사 결과가 나온 때, 영향을 받는 사람 — 이 셋을 나누어 읽는다. 사건 이야기 자체는 8장에서 다룬다."}, {"q": "「정보 · 서비스 · 접근 수단」의 관계에서 접근 수단의 뜻으로 옳은 것은?", "opts": ["기관이 보관하는 이용자·업무 자료", "정보를 쓰고 처리하는 창구", "사람과 시스템이 정보에 닿는 길", "서비스가 운영되는 전산실"], "ans": 2, "basis": "현행 2장 15쪽 · RFCH02-004", "expl": "접근 수단을 정리하는 일이 정보 보호의 시작이다."}, {"q": "\"KISA에 접수된 랜섬웨어 피해 기업 신고 건수\" 지표를 읽을 때 옳은 태도는?", "opts": ["국내 전체 발생 건수와 같다고 본다", "신고된 수와 실제로 일어난 수는 다르다는 점을 함께 본다", "모든 공격이 늘었다는 근거로 쓴다", "신고 건수만큼 기관도 피해를 입었다고 본다"], "ans": 1, "basis": "현행 2장 14쪽 · RFCH02-003", "expl": "지표 하나로 전체 발생 건수나 모든 공격의 증가를 주장하지 않는다."}, {"q": "2장이 정리한 「자주 나오는 말 세 가지」 중 「내용이 바뀌어 믿을 수 없게 된 일」은?", "opts": ["변조", "유출", "중단", "지연"], "ans": 0, "basis": "현행 2장 17쪽 · RFCH02-010", "expl": "유출=밖으로 나간 일, 중단=서비스가 멈춘 일, 변조=내용이 바뀐 일."}, {"q": "최신 위협 정보를 받는 공식 창구로 2장이 든 셋 중, 「기관끼리 위협 정보를 나누는 체계」는?", "opts": ["KISA 보안공지", "보호나라", "C-TAS", "침해사고 신고 창구"], "ans": 2, "basis": "현행 2장 13쪽 · RFCH02-002", "expl": "KISA 보안공지는 새로 알려진 취약점과 조치 안내, 보호나라는 기관·이용자를 위한 안내와 신고 창구, C-TAS는 기관끼리 위협 정보를 나누는 체계다. 기관에서 한 곳을 정해 정기적으로 확인한다."}];</script>
+<script>
+(function(){
+ var $=function(s,r){return (r||document).querySelector(s)},$$=function(s,r){return [].slice.call((r||document).querySelectorAll(s))};
+ var D=window.DATA, i=-1, picked=[], scenes=$$('.scene'), MK=["①","②","③","④","⑤"];
+ // 움직임: 시스템이 줄이기면 끄고 단추를 잠근다. 아니면 사용자의 선택을 이 탭 안에서 기억한다(저장 실패해도 동작).
+ var OSR=matchMedia('(prefers-reduced-motion: reduce)').matches, mb=$('.mbtn');
+ function store(v){try{sessionStorage.setItem('soc.nomo',v?'1':'0');}catch(e){}}
+ function stored(){try{return sessionStorage.getItem('soc.nomo');}catch(e){return null;}}
+ if(OSR){document.documentElement.classList.add('nomo');mb.disabled=true;mb.textContent='움직임 꺼짐 · 시스템 설정';mb.setAttribute('aria-pressed','true');}
+ else{ if(stored()==='1')document.documentElement.classList.add('nomo');
+   var syncM=function(){var off=document.documentElement.classList.contains('nomo');mb.textContent=off?'움직임 켜기':'움직임 끄기';mb.setAttribute('aria-pressed',off);};
+   mb.addEventListener('click',function(){var off=document.documentElement.classList.toggle('nomo');store(off);syncM();}); syncM(); }
+ var ft=null; function focusLater(sel,ms){ if(ft)clearTimeout(ft); ft=setTimeout(function(){var el=$(sel); if(el&&el.closest('.scene.on'))el.focus({preventScroll:true});},ms); }
+
+ function show(k){
+   scenes.forEach(function(s,j){ s.classList.toggle('out', j<k); s.classList.toggle('on', j===k); });
+   var qi=k-1; $('.hud .bar i').style.width=(Math.max(0,Math.min(qi,D.length))/D.length*100)+'%';
+   $$('.hud .dots b').forEach(function(b,j){b.classList.toggle('on',j===qi);b.classList.toggle('done',j<qi);});
+   var sc=$('.scene.on'); if(sc){sc.scrollTop=0;} focusLater('.scene.on .inner',60);
+ }
+ function build(){
+   D.forEach(function(q,qi){
+     var sec=scenes[qi+1];
+     $('.qtext',sec).innerHTML=q.q.split(' ').map(function(w,j){return '<span class="w" style="animation-delay:'+(j*45)+'ms">'+w+'</span>';}).join(' ');
+     $('.opts',sec).innerHTML=q.opts.map(function(o,k){
+       return '<button type="button" class="opt" data-k="'+k+'" style="animation-delay:'+(220+k*90)+'ms"><span class="m">'+MK[k]+'</span><span>'+o+'</span><span class="key">'+(k+1)+'</span></button>';}).join('');
+     $$('.opt',sec).forEach(function(b){b.addEventListener('click',function(){answer(qi,+b.dataset.k);});});
+   });
+ }
+ function answer(qi,k){
+   var sec=scenes[qi+1]; if(sec.classList.contains('answered'))return;
+   var q=D[qi]; picked[qi]=k; sec.classList.add('answered');
+   $$('.opt',sec).forEach(function(b,j){ b.classList.toggle('ok',j===q.ans); b.classList.toggle('ng',j===k&&k!==q.ans); b.classList.toggle('dim',j!==q.ans&&j!==k); b.disabled=true; });
+   var right=(k===q.ans);
+   if(right&&!document.documentElement.classList.contains('nomo')){
+     var okEl=$('.opt.ok',sec), r=okEl.getBoundingClientRect(), host=$('.inner',sec), hr=host.getBoundingClientRect();
+     for(var s2=0;s2<10;s2++){var d=document.createElement('i');d.className='spark';var ang=s2/10*Math.PI*2, dist=60+Math.random()*50;
+       d.style.left=(r.left-hr.left+r.width/2)+'px';d.style.top=(r.top-hr.top+r.height/2)+'px';
+       d.style.setProperty('--dx',Math.cos(ang)*dist+'px');d.style.setProperty('--dy',Math.sin(ang)*dist+'px');
+       d.style.background=s2%2?'#fff':getComputedStyle(document.documentElement).getPropertyValue('--sky');host.appendChild(d);setTimeout(function(x){x.remove();},900,d);}
+   }
+   $('#live').textContent='Q'+(qi+1)+' '+(right?'정답':'다시 보기')+' — 정답은 '+MK[q.ans]+' '+q.opts[q.ans];
+   $('.fb',sec).innerHTML='<span class="tag'+(right?'':' ng')+'">'+(right?'정답':'다시 보기')+'</span><b>'+MK[q.ans]+' '+q.opts[q.ans]+'</b>'
+     +'<div class="ex">'+q.expl+'</div><div class="bs">근거 · '+q.basis+'</div>'
+     +'<button type="button" class="next">'+(qi+1<D.length?'다음 문항 →':'결과 보기 →')+'</button>';
+   $('.next',sec).addEventListener('click',function(){ go(qi+2); });
+   focusLater('.scene.on .next',450);
+ }
+ function go(k){
+   if(k===D.length+1) result();
+   i=k; show(k);
+ }
+ function result(){
+   var ok=picked.filter(function(p,j){return p===D[j].ans;}).length, sec=scenes[D.length+1];
+   $('.sr',sec).textContent=D.length+'문항 중 '+ok+'개 정답'; $('#live').textContent='결과 — '+D.length+'문항 중 '+ok+'개 정답';
+   $('.recap',sec).innerHTML=D.map(function(q,j){var r=picked[j]===q.ans;
+     return '<div style="animation-delay:'+(300+j*110)+'ms"><b class="'+(r?'':'ng')+'">Q'+(j+1)+'</b><span>'+(r?'맞음':'다시 보기')+' — '+q.q+'</span></div>';}).join('');
+   setTimeout(function(){
+     $('.pr',sec).style.strokeDashoffset=440-440*ok/D.length;
+     var n=0,el=$('.ring .n span',sec),t=setInterval(function(){el.textContent=n; if(n>=ok)clearInterval(t); n++;},
+       document.documentElement.classList.contains('nomo')?0:160);
+   },200);
+ }
+ $('.go').addEventListener('click',function(){go(1);});
+ $('.again').addEventListener('click',function(){location.reload();});
+ document.addEventListener('keydown',function(e){
+   if(i<1||i>D.length)return; var sec=scenes[i];
+   if(/^[1-5]$/.test(e.key)&&!sec.classList.contains('answered')){var b=$('.opt[data-k="'+(+e.key-1)+'"]',sec); if(b)b.click();}
+   if((e.key==='Enter'||e.key===' ')&&sec.classList.contains('answered')&&document.activeElement.tagName!=='BUTTON'){e.preventDefault();go(i+1);}
+ });
+ build(); show(0);
+})();
+</script></body></html>
