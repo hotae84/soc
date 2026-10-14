@@ -9,7 +9,7 @@
 | [`exam/`](exam/) | 사전 설문(자가 진단 10문항) · 평가 예상문제 30문항 · 실전문제 20문항 — A4 인쇄용 docx |
 
 ## 쓰는 법
-**바로 열기** → https://hotae84.github.io/soc2026-materials/ (설치·다운로드 없이 브라우저에서 바로 실행)
+**바로 열기** → https://hotae84.github.io/soc/ (설치·다운로드 없이 브라우저에서 바로 실행)
 
 내려받아 쓰려면:
 1. 초록 **Code ▾ → Download ZIP**으로 전부 내려받아 압축을 풀고, `index.html`을 엽니다.
